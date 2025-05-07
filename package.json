@@ -1,0 +1,24 @@
+{
+  "name": "framecomms",
+  "version": "1.0.0",
+  "main": "./lib/index.js",
+  "module": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "tsc & jest"
+  },
+  "keywords": [],
+  "author": "richard söderman",
+  "description": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^29.5.13",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.6.3"
+  },
+  "dependencies": {
+    "short-unique-id": "^5.2.2"
+  }
+}
