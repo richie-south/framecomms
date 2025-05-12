@@ -30,6 +30,7 @@ export function connectToIframe({
   available?: Available
 }) {
   const subscriberId = generateUniqId.rnd()
+
   let isConnected = false
   const rpc = createRpcHandler()
   const events = createEvents()
@@ -126,7 +127,8 @@ export function connectToIframe({
   const call = (method: string, payload?: any) => {
     return new Promise((resolve, reject) => {
       if (!isConnected) {
-        return reject(new Error('not connected to publisher'))
+        // TODO: send this when connected?
+        return reject(new Error('Not connected'))
       }
 
       const reqId = generateUniqId.rnd()
@@ -137,7 +139,7 @@ export function connectToIframe({
           resolve(returnParams)
         },
         onDeregister: () => {
-          reject(new Error(`no reponse to call ${method}`))
+          reject(new Error(`No reponse ${method}`))
         },
       })
 
@@ -168,7 +170,7 @@ export function connectToIframe({
           resolve(true)
         },
         onDeregister: () => {
-          reject(new Error('Could not connect to iframe'))
+          reject(new Error('Could not connect'))
         },
       })
 

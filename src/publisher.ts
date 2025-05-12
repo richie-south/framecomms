@@ -20,6 +20,7 @@ import {
   UpdateGlobalsMessage,
 } from './types/post-messages'
 import {Attributes, Available, GetContainer} from './types/types'
+const iframeLoaded = '3q6vOw'
 
 function parseGlobals(available: Available) {
   return Object.fromEntries(
@@ -91,7 +92,7 @@ export function createIframe({
   iframe.addEventListener('load', () => {
     hasIframeLoaded = true
     rpc.handle({
-      key: 'iframe-loaded',
+      key: iframeLoaded,
       payload: '',
     })
   })
@@ -116,7 +117,7 @@ export function createIframe({
         iframe?.contentWindow?.postMessage(message, origin)
       } else {
         rpc.register({
-          key: 'iframe-loaded',
+          key: iframeLoaded,
           onHandle: async () => {
             iframe?.contentWindow?.postMessage(message, origin)
           },
@@ -203,7 +204,7 @@ export function createIframe({
           resolve(resurnParams)
         },
         onDeregister: () => {
-          reject(new Error(`no reponse to call ${method}`))
+          reject(new Error(`No reponse ${method}`))
         },
       })
 
