@@ -1,4 +1,4 @@
-import {generateUniqId} from './generate-uniq-id'
+import {getId} from './generate-uniq-id'
 import {createRpcHandler} from './rpc'
 import {
   CallFnMessage,
@@ -35,7 +35,7 @@ function _setUpIframe(
   attributes: Attributes,
   getContainer?: GetContainer,
 ) {
-  const uid = `uid_framecomms_${generateUniqId.rnd()}`
+  const uid = `uid_framecomms_${getId()}`
   const iframe = document.createElement('iframe')
 
   if (attributes && attributes.iframe) {
@@ -226,7 +226,7 @@ export function createIframe({
 
   const call = (method: string, payload: any) => {
     return new Promise((resolve, reject) => {
-      const reqId = generateUniqId.rnd()
+      const reqId = getId()
 
       rpc.register({
         key: reqId,

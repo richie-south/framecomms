@@ -1,5 +1,5 @@
 import {createEvents} from './events'
-import {generateUniqId} from './generate-uniq-id'
+import {getId} from './generate-uniq-id'
 import {createRpcHandler} from './rpc'
 import {
   CallFnMessage,
@@ -29,7 +29,7 @@ export function connectToIframe({
   id: string
   available?: Available
 }) {
-  const subscriberId = generateUniqId.rnd()
+  const subscriberId = getId()
 
   let isConnected = false
   const rpc = createRpcHandler()
@@ -126,7 +126,7 @@ export function connectToIframe({
 
   const _connect = () => {
     return new Promise((resolve, reject) => {
-      const reqId = generateUniqId.rnd()
+      const reqId = getId()
 
       rpc.register({
         key: reqId,
@@ -161,7 +161,7 @@ export function connectToIframe({
         return reject(new Error('Not connected'))
       }
 
-      const reqId = generateUniqId.rnd()
+      const reqId = getId()
 
       rpc.register({
         key: reqId,
@@ -199,7 +199,7 @@ export function connectToIframe({
   }
 
   const emit = (event: string, payload: any) => {
-    const reqId = generateUniqId.rnd()
+    const reqId = getId()
 
     const message: EmitMessage<typeof payload> = {
       type: emitMessage,
