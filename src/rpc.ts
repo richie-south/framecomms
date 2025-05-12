@@ -17,13 +17,11 @@ interface RpcResponse {
   error?: string
 }
 
-export const AUTO_DEREGISTER_TIMEOUT_MS = 1_000
-
 export function createRpcHandler() {
   const methods = new Map<string, RpcRegister>()
   const timers = new Map<string, NodeJS.Timeout>()
 
-  const clearTimer = (methodName: string) => {
+  const _clearTimer = (methodName: string) => {
     const existing = timers.get(methodName)
 
     if (existing) {
@@ -32,19 +30,19 @@ export function createRpcHandler() {
     }
   }
 
-  const setAutoDeregisterTimer = (methodName: string) => {
-    clearTimer(methodName)
+  const _setAutoDeregisterTimer = (methodName: string) => {
+    _clearTimer(methodName)
 
     const timeout = setTimeout(() => {
       deregister(methodName)
-    }, AUTO_DEREGISTER_TIMEOUT_MS)
+    }, 1_000)
 
     timers.set(methodName, timeout)
   }
 
   const register = (register: RpcRegister) => {
     methods.set(register.key, register)
-    setAutoDeregisterTimer(register.key)
+    _setAutoDeregisterTimer(register.key)
   }
 
   const deregister = (methodName: string) => {
@@ -59,7 +57,7 @@ export function createRpcHandler() {
     }
 
     const existed = methods.delete(methodName)
-    clearTimer(methodName)
+    _clearTimer(methodName)
     return existed
   }
 
@@ -70,7 +68,7 @@ export function createRpcHandler() {
       return {error: `Method "${key}" not found.`}
     }
 
-    clearTimer(key)
+    _clearTimer(key)
     methods.delete(key)
 
     try {

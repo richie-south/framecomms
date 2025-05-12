@@ -36,7 +36,7 @@ export function connectToIframe({
   const events = createEvents()
   let origin = '*'
 
-  const onEvent = async (event: MessageEvent<Events>) => {
+  const _onEvent = async (event: MessageEvent<Events>) => {
     if (!event.data || event.data?.id !== id) {
       return
     }
@@ -156,7 +156,7 @@ export function connectToIframe({
     })
   }
 
-  const connect = () => {
+  const _connect = () => {
     return new Promise((resolve, reject) => {
       const reqId = generateUniqId.rnd()
 
@@ -213,9 +213,8 @@ export function connectToIframe({
     parent.postMessage(message, origin)
   }
 
-  window.addEventListener('message', onEvent, false)
-
-  connect()
+  window.addEventListener('message', _onEvent, false)
+  _connect()
 
   return {
     call,

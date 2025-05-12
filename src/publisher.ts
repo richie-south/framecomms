@@ -22,7 +22,7 @@ import {
 import {Attributes, Available, GetContainer} from './types/types'
 const iframeLoaded = '3q6vOw'
 
-function parseGlobals(available: Available) {
+function _parseGlobals(available: Available) {
   return Object.fromEntries(
     Object.entries(available ?? {}).filter(
       ([key, value]) => typeof value !== 'function',
@@ -30,7 +30,7 @@ function parseGlobals(available: Available) {
   )
 }
 
-function setUpIframe(
+function _setUpIframe(
   src: string,
   attributes: Attributes,
   getContainer?: GetContainer,
@@ -83,8 +83,8 @@ export function createIframe({
   available?: Available
   container?: GetContainer
 }) {
-  let globals = parseGlobals(available)
-  const {fragment, iframe, origin} = setUpIframe(src, attributes, container)
+  let globals = _parseGlobals(available)
+  const {fragment, iframe, origin} = _setUpIframe(src, attributes, container)
   const rpc = createRpcHandler()
   const subscribers = []
   let hasIframeLoaded = false
@@ -97,7 +97,7 @@ export function createIframe({
     })
   })
 
-  const onEvent = async (event: MessageEvent<Events>) => {
+  const _onEvent = async (event: MessageEvent<Events>) => {
     if (!event.data || event.data?.id !== id) {
       return
     }
@@ -220,7 +220,7 @@ export function createIframe({
     })
   }
 
-  const ping = () => {
+  const _ping = () => {
     setInterval(() => {
       if (subscribers.length === 0) {
         return
@@ -256,7 +256,7 @@ export function createIframe({
       ...newAvailable,
     }
 
-    globals = parseGlobals(available)
+    globals = _parseGlobals(available)
 
     const message: UpdateGlobalsMessage<typeof globals> = {
       type: updateGlobalsMessage,
@@ -267,8 +267,8 @@ export function createIframe({
     iframe?.contentWindow?.postMessage(message, origin)
   }
 
-  window.addEventListener('message', onEvent, false)
-  ping()
+  window.addEventListener('message', _onEvent, false)
+  _ping()
 
   return {
     render,
