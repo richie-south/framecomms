@@ -124,6 +124,36 @@ export function connectToIframe({
     }
   }
 
+  const _connect = () => {
+    return new Promise((resolve, reject) => {
+      const reqId = generateUniqId.rnd()
+
+      rpc.register({
+        key: reqId,
+        onHandle: async (payload) => {
+          isConnected = true
+          window.framecommsProps = payload
+
+          events.handle(connectedMessage, payload)
+          resolve(true)
+        },
+        onDeregister: () => {
+          reject(new Error('Could not connect'))
+        },
+      })
+
+      const message: ConnectMessage<typeof subscriberId> = {
+        type: connectMessage,
+        id,
+        reqId,
+        subscriberId,
+        payload: subscriberId,
+      }
+
+      parent.postMessage(message, origin)
+    })
+  }
+
   const call = (method: string, payload?: any) => {
     return new Promise((resolve, reject) => {
       if (!isConnected) {
@@ -153,36 +183,6 @@ export function connectToIframe({
       }
 
       parent.postMessage(message, '*')
-    })
-  }
-
-  const _connect = () => {
-    return new Promise((resolve, reject) => {
-      const reqId = generateUniqId.rnd()
-
-      rpc.register({
-        key: reqId,
-        onHandle: async (payload) => {
-          isConnected = true
-          window.framecommsProps = payload
-
-          events.handle(connectedMessage, payload)
-          resolve(true)
-        },
-        onDeregister: () => {
-          reject(new Error('Could not connect'))
-        },
-      })
-
-      const message: ConnectMessage<typeof subscriberId> = {
-        type: connectMessage,
-        id,
-        reqId,
-        subscriberId,
-        payload: subscriberId,
-      }
-
-      parent.postMessage(message, origin)
     })
   }
 

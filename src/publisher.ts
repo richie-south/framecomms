@@ -190,36 +190,6 @@ export function createIframe({
     }
   }
 
-  const render = (query: string) => {
-    return window.document.querySelector(query).appendChild(fragment)
-  }
-
-  const call = (method: string, payload: any) => {
-    return new Promise((resolve, reject) => {
-      const reqId = generateUniqId.rnd()
-
-      rpc.register({
-        key: reqId,
-        onHandle: async (resurnParams) => {
-          resolve(resurnParams)
-        },
-        onDeregister: () => {
-          reject(new Error(`No reponse ${method}`))
-        },
-      })
-
-      const message: CallFnMessage<typeof payload> = {
-        type: callFnMessage,
-        id,
-        reqId,
-        method,
-        payload,
-      }
-
-      iframe?.contentWindow?.postMessage(message, origin)
-    })
-  }
-
   const _ping = () => {
     setInterval(() => {
       if (subscribers.length === 0) {
@@ -248,6 +218,36 @@ export function createIframe({
         iframe?.contentWindow?.postMessage(message, origin)
       })
     }, 40_000)
+  }
+
+  const render = (query: string) => {
+    return window.document.querySelector(query).appendChild(fragment)
+  }
+
+  const call = (method: string, payload: any) => {
+    return new Promise((resolve, reject) => {
+      const reqId = generateUniqId.rnd()
+
+      rpc.register({
+        key: reqId,
+        onHandle: async (resurnParams) => {
+          resolve(resurnParams)
+        },
+        onDeregister: () => {
+          reject(new Error(`No reponse ${method}`))
+        },
+      })
+
+      const message: CallFnMessage<typeof payload> = {
+        type: callFnMessage,
+        id,
+        reqId,
+        method,
+        payload,
+      }
+
+      iframe?.contentWindow?.postMessage(message, origin)
+    })
   }
 
   const addAvailable = (newAvailable: Available) => {
