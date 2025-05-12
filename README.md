@@ -1,28 +1,32 @@
 # framecomms
 
-```typescript
-// page 1
+**Extreme work in progress**
 
-const pageOne = createIframe({
+Basics of normalized/standardised iframe communication intended to be a lightweight alternative to `@krakenjs/zoid`
+
+```typescript
+// page
+
+const parentPage = createIframe({
   id: 'my-frame',
   src: '',
   available: {
-    pageOneFn: (params) => {
-      console.log('called pageOneFn', params)
+    parentPageFn: (params) => {
+      console.log('called parentPageFn', params)
     },
   },
 })
 
-// page 2
+// inside iframe
 
-const pageTwo = connectToIframe({
+const insideIframe = connectToIframe({
   id: 'my-frame',
   available: {
-    pageTwoFn: () => {
-      console.log('called pageTwoFn')
+    insideIframeFn: () => {
+      console.log('called insideIframeFn')
     },
   },
 })
 
-pageTwo.call('pageOneFn', {id: 1})
+insideIframe.call('parentPageFn', {id: 1})
 ```
