@@ -4,8 +4,35 @@
   "main": "./lib/index.js",
   "module": "./lib/index.js",
   "types": "./lib/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./lib/index.js",
+      "import": "./lib/index.js",
+      "types": "./lib/index.d.ts"
+    },
+    "./subscriber": {
+      "require": "./lib/subscriber.js",
+      "import": "./lib/subscriber.js",
+      "types": "./lib/subscriber.d.ts"
+    },
+    "./publisher": {
+      "require": "./lib/publisher.js",
+      "import": "./lib/publisher.js",
+      "types": "./lib/publisher.d.ts"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "subscriber": [
+        "lib/subscriber.d.ts"
+      ],
+      "publisher": [
+        "lib/publisher.d.ts"
+      ]
+    }
+  },
   "scripts": {
-    "build": "tsc",
+    "build": "rm -rf ./lib && tsc",
     "test": "tsc & jest"
   },
   "keywords": [],
