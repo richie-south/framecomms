@@ -1,2 +1,2 @@
 export {createIframe} from './publisher'
-export {connectToIframe} from './subscriber'
+export {connectTo} from './subscriber'

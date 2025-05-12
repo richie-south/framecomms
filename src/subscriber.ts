@@ -22,7 +22,7 @@ import {
 } from './types/post-messages'
 import {Available} from './types/types'
 
-export function connectToIframe({
+export function connectTo({
   id,
   available,
 }: {
