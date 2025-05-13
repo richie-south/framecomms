@@ -9,6 +9,7 @@ import {
   connectMessage,
   EmitMessage,
   emitMessage,
+  EmitMessagePublisher,
   Events,
   pingMessage,
   PingMessage,
@@ -224,7 +225,7 @@ export function createIframe({
     return window.document.querySelector(query).appendChild(fragment)
   }
 
-  const call = (method: string, payload: any) => {
+  const call = (method: string, payload: unknown) => {
     return new Promise((resolve, reject) => {
       const reqId = getId()
 
@@ -267,12 +268,23 @@ export function createIframe({
     iframe?.contentWindow?.postMessage(message, origin)
   }
 
+  const emit = (event: string, payload: unknown) => {
+    const message: EmitMessagePublisher = {
+      type: emitMessage,
+      id,
+      event,
+      payload: payload,
+    }
+    iframe?.contentWindow?.postMessage(message, origin)
+  }
+
   window.addEventListener('message', _onEvent, false)
   _ping()
 
   return {
     render,
     call,
+    emit,
     addAvailable,
   }
 }

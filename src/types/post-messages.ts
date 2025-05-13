@@ -71,7 +71,14 @@ export interface EmitMessage<TPayload = unknown> {
   id: string
   reqId: string
   event: string
-  subscriberId: string
+  subscriberId?: string
+  payload: TPayload
+}
+
+export interface EmitMessagePublisher<TPayload = unknown> {
+  type: typeof emitMessage
+  id: string
+  event: string
   payload: TPayload
 }
 
