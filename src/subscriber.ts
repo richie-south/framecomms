@@ -24,7 +24,7 @@ import {Available} from './types/types'
 
 export function connectTo({
   id,
-  available,
+  available = {},
 }: {
   id: string
   available?: Available
@@ -154,19 +154,19 @@ export function connectTo({
     })
   }
 
-  const call = (method: string, payload?: any) => {
+  const call = <T = unknown>(method: string, payload?: unknown): Promise<T> => {
     return new Promise((resolve, reject) => {
       if (!isConnected) {
         // TODO: send this when connected?
-        return reject(new Error('Not connected'))
+        return reject(new Error(`Not connected ${method}`))
       }
 
       const reqId = getId()
 
       rpc.register({
         key: reqId,
-        onHandle: async (returnParams) => {
-          resolve(returnParams)
+        onHandle: async (returns) => {
+          resolve(returns as T)
         },
         onDeregister: () => {
           reject(new Error(`No reponse ${method}`))
@@ -186,7 +186,10 @@ export function connectTo({
     })
   }
 
-  const on = (event: string, callback: (params: any) => Promise<any>) => {
+  const on = <T = unknown>(
+    event: string,
+    callback: (params: unknown) => Promise<T>,
+  ) => {
     events.register(event, callback)
 
     if (event === connectedMessage && isConnected) {
@@ -198,7 +201,7 @@ export function connectTo({
     events.deregister(event)
   }
 
-  const emit = (event: string, payload: any) => {
+  const emit = (event: string, payload: unknown) => {
     const reqId = getId()
 
     const message: EmitMessage<typeof payload> = {
