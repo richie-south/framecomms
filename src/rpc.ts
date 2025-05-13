@@ -35,7 +35,7 @@ export function createRpcHandler() {
 
     const timeout = setTimeout(() => {
       deregister(methodName)
-    }, 1_000)
+    }, 60_000)
 
     timers.set(methodName, timeout)
   }
