@@ -143,11 +143,10 @@ test('iframe should call function to parent', async ({page}) => {
   await waitForConsoleLog
 })
 
-test.only('parent should call function to iframe', async ({page}) => {
+test('parent should call function to iframe', async ({page}) => {
   const waitForConsoleLog = new Promise<void>((resolve) => {
     page.on('console', (msg) => {
       const text = msg.text()
-
       if (text === 'called iframeFn') {
         resolve()
       }
@@ -161,10 +160,7 @@ test.only('parent should call function to iframe', async ({page}) => {
     })
 
     parentPage.render('#child')
-
-    setTimeout(() => {
-      parentPage.call('iframeFn', 'a')
-    }, 100)
+    parentPage.call('iframeFn', 'a')
   `
 
   const frame = await setUp({page, pageCode})
