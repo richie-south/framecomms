@@ -92,3 +92,4 @@ export type Events =
   | PongMessage
   | UpdateGlobalsMessage
   | EmitMessage
+  | EmitMessagePublisher
