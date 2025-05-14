@@ -1,3 +1,4 @@
+import {callQueueHandler} from './call-queue'
 import {createEvents} from './events'
 import {getId} from './generate-uniq-id'
 import {createRpcHandler} from './rpc'
@@ -27,10 +28,10 @@ export function connectTo({
   available?: Available
 }) {
   const subscriberId = getId()
-
-  let isConnected = false
   const rpc = createRpcHandler()
   const events = createEvents()
+  const callQueue = callQueueHandler()
+  let isConnected: boolean = false
   let origin: string = '*'
 
   const _onEvent = async (event: MessageEvent<Events>) => {
@@ -121,8 +122,9 @@ export function connectTo({
         onHandle: async (payload) => {
           isConnected = true
           window.framecommsProps = payload
-
           events.handle(connectedMessage, payload)
+          callQueue.flush(post)
+
           resolve(true)
         },
         onDeregister: () => {
@@ -142,13 +144,12 @@ export function connectTo({
     })
   }
 
+  const post = (message: Events) => {
+    parent.postMessage(message, '*')
+  }
+
   const call = <T = unknown>(method: string, payload?: unknown): Promise<T> => {
     return new Promise((resolve, reject) => {
-      if (!isConnected) {
-        // TODO: send this when connected?
-        return reject(new Error(`Not connected ${method}`))
-      }
-
       const reqId = getId()
 
       rpc.register({
@@ -168,6 +169,11 @@ export function connectTo({
         method,
         payload,
         subscriberId,
+      }
+
+      if (!isConnected) {
+        callQueue.add(message)
+        return
       }
 
       parent.postMessage(message, '*')
@@ -199,6 +205,11 @@ export function connectTo({
       event,
       subscriberId,
       payload,
+    }
+
+    if (!isConnected) {
+      callQueue.add(message)
+      return
     }
 
     parent.postMessage(message, origin)
