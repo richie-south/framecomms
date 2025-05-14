@@ -35,6 +35,7 @@ export interface ConnectedMessage<TPayload = unknown> {
   type: typeof connectedMessage
   id: string
   reqId: string
+  origin: string
   payload: TPayload
   subscriberId?: string
 }
