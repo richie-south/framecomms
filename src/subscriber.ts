@@ -4,21 +4,18 @@ import {createRpcHandler} from './rpc'
 import {
   CallFnMessage,
   callFnMessage,
-  ConnectedMessage,
   connectedMessage,
   connectMessage,
   ConnectMessage,
   emitMessage,
   EmitMessage,
   Events,
-  PingMessage,
   pingMessage,
   pongMessage,
   PongMessage,
   responseMessage,
   ResponseMessage,
   updateGlobalsMessage,
-  UpdateGlobalsMessage,
 } from './types/post-messages'
 import {Available} from './types/types'
 
@@ -34,7 +31,7 @@ export function connectTo({
   let isConnected = false
   const rpc = createRpcHandler()
   const events = createEvents()
-  let origin = '*'
+  let origin: string = '*'
 
   const _onEvent = async (event: MessageEvent<Events>) => {
     if (!event.data || event.data?.id !== id) {
@@ -42,12 +39,11 @@ export function connectTo({
     }
 
     if (event.data.type === connectedMessage) {
-      const incoming = event.data as unknown as ConnectedMessage
-      origin = event.origin
+      origin = event.data.origin
 
       rpc.handle({
-        key: incoming.reqId,
-        payload: incoming.payload,
+        key: event.data.reqId,
+        payload: event.data.payload,
       })
 
       return
@@ -62,12 +58,10 @@ export function connectTo({
     }
 
     if (event.data?.type === pingMessage && event.data.reqId === subscriberId) {
-      const incoming = event.data as unknown as PingMessage
-
       const message: PongMessage = {
         type: pongMessage,
         id,
-        reqId: incoming.reqId,
+        reqId: event.data.reqId,
         subscriberId,
       }
       parent.postMessage(message, origin)
@@ -75,15 +69,13 @@ export function connectTo({
     }
 
     if (event.data?.type === callFnMessage) {
-      const incoming = event.data as unknown as CallFnMessage
-
       const availableKeys = Object.keys(available)
-      if (availableKeys.includes(incoming.method)) {
-        const handler = available[incoming.method]
+      if (availableKeys.includes(event.data.method)) {
+        const handler = available[event.data.method]
 
         if (typeof handler === 'function') {
           try {
-            const response = await handler(incoming.payload)
+            const response = await handler(event.data.payload)
             const message: ResponseMessage<typeof response> = {
               type: responseMessage,
               id,
@@ -101,25 +93,21 @@ export function connectTo({
     }
 
     if (event.data.type === responseMessage) {
-      const incoming = event.data as unknown as ResponseMessage
       rpc.handle({
-        key: incoming.reqId,
-        payload: incoming.payload,
+        key: event.data.reqId,
+        payload: event.data.payload,
       })
       return
     }
 
     if (event.data.type === updateGlobalsMessage) {
-      const incoming = event.data as unknown as UpdateGlobalsMessage
       // TODO: handle this as a get function instead of poluting window
-      window.framecommsProps = incoming.payload
+      window.framecommsProps = event.data.payload
       return
     }
 
     if (event.data.type === emitMessage) {
-      const incoming = event.data as unknown as EmitMessage
-      events.handle(incoming.event, incoming.payload)
-
+      events.handle(event.data.event, event.data.payload)
       return
     }
   }
