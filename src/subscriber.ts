@@ -34,6 +34,10 @@ export function connectTo({
   let isConnected: boolean = false
   let origin: string = '*'
 
+  const _post = (message: Events, o = origin) => {
+    parent.postMessage(message, o)
+  }
+
   const _onEvent = async (event: MessageEvent<Events>) => {
     if (!event.data || event.data?.id !== id) {
       return
@@ -65,7 +69,7 @@ export function connectTo({
         reqId: event.data.reqId,
         subscriberId,
       }
-      parent.postMessage(message, origin)
+      _post(message)
       return
     }
 
@@ -85,7 +89,7 @@ export function connectTo({
               payload: response,
             }
 
-            parent.postMessage(message, origin)
+            _post(message)
           } catch (error) {}
         }
 
@@ -123,7 +127,7 @@ export function connectTo({
           isConnected = true
           window.framecommsProps = payload
           events.handle(connectedMessage, payload)
-          callQueue.flush(post)
+          callQueue.flush(_post)
 
           resolve(true)
         },
@@ -140,12 +144,8 @@ export function connectTo({
         payload: subscriberId,
       }
 
-      parent.postMessage(message, origin)
+      _post(message)
     })
-  }
-
-  const post = (message: Events) => {
-    parent.postMessage(message, '*')
   }
 
   const call = <T = unknown>(method: string, payload?: unknown): Promise<T> => {
@@ -176,7 +176,7 @@ export function connectTo({
         return
       }
 
-      parent.postMessage(message, '*')
+      _post(message, '*')
     })
   }
 
@@ -212,7 +212,7 @@ export function connectTo({
       return
     }
 
-    parent.postMessage(message, origin)
+    _post(message)
   }
 
   window.addEventListener('message', _onEvent, false)

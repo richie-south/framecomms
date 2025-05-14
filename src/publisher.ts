@@ -106,6 +106,10 @@ export function createIframe({
     })
   })
 
+  const _post = (message: Events, o = origin) => {
+    iframe?.contentWindow?.postMessage(message, o)
+  }
+
   const _onEvent = async (event: MessageEvent<Events>) => {
     if (!event.data || event.data?.id !== id) {
       return
@@ -123,14 +127,14 @@ export function createIframe({
       }
 
       if (hasIframeLoaded) {
-        iframe?.contentWindow?.postMessage(message, origin)
-        callQueue.flush(post)
+        _post(message)
+        callQueue.flush(_post)
       } else {
         rpc.register({
           key: iframeLoaded,
           onHandle: async () => {
-            iframe?.contentWindow?.postMessage(message, origin)
-            callQueue.flush(post)
+            _post(message)
+            callQueue.flush(_post)
           },
         })
       }
@@ -164,7 +168,7 @@ export function createIframe({
               reqId: event.data.reqId,
               payload: response,
             }
-            iframe?.contentWindow?.postMessage(message, '*')
+            _post(message, '*')
           } catch (error) {}
         }
 
@@ -190,7 +194,7 @@ export function createIframe({
         subscriberId: incoming.subscriberId,
         payload: incoming.payload,
       }
-      iframe?.contentWindow?.postMessage(message, origin)
+      _post(message)
       return
     }
   }
@@ -220,17 +224,13 @@ export function createIframe({
           reqId: subscriberId,
         }
 
-        iframe?.contentWindow?.postMessage(message, origin)
+        _post(message)
       })
     }, 40_000)
   }
 
   const render = (query: string) => {
     return window.document.querySelector(query).appendChild(fragment)
-  }
-
-  const post = (message: Events) => {
-    iframe?.contentWindow?.postMessage(message, origin)
   }
 
   const call = (method: string, payload: unknown) => {
@@ -260,7 +260,7 @@ export function createIframe({
         return
       }
 
-      iframe?.contentWindow?.postMessage(message, origin)
+      _post(message)
     })
   }
 
@@ -278,7 +278,7 @@ export function createIframe({
       payload: globals,
     }
 
-    iframe?.contentWindow?.postMessage(message, origin)
+    _post(message)
   }
 
   const emit = (event: string, payload: unknown) => {
@@ -294,7 +294,7 @@ export function createIframe({
       return
     }
 
-    iframe?.contentWindow?.postMessage(message, origin)
+    _post(message)
   }
 
   window.addEventListener('message', _onEvent, false)
