@@ -143,7 +143,7 @@ test('iframe should call function to parent', async ({page}) => {
   await waitForConsoleLog
 })
 
-test('parent should call function to iframe', async ({page}) => {
+test.only('parent should call function to iframe', async ({page}) => {
   const waitForConsoleLog = new Promise<void>((resolve) => {
     page.on('console', (msg) => {
       const text = msg.text()
@@ -365,6 +365,56 @@ test('iframe should subscribe to on and parent can emit', async ({page}) => {
 
     insideIframe.on('subscriber', (param) => {
       console.log(param)
+    })
+  })
+
+  await waitForConsoleLog
+})
+
+test('iframe should queue calls parent if its not connected', async ({
+  page,
+}) => {
+  const waitForConsoleLog = new Promise<void>((resolve) => {
+    page.on('console', (msg) => {
+      const text = msg.text()
+      console.log('text', text)
+
+      if (text === 'called parent') {
+        resolve()
+      }
+    })
+  })
+
+  const pageCode = `
+    const parentPage = testFramecomms.createIframe({
+      id: 'my-frame',
+      src: '',
+      options: {origin: '*'},
+      available: {
+        parentPageFn: (params) => {
+          console.log('called parent')
+        },
+      },
+    })
+
+    parentPage.render('#child')
+  `
+
+  const frame = await setUp({page, pageCode})
+
+  // Inject custom test code into the iframe, that uses your lib
+  await frame.evaluate(() => {
+    if (!window.testFramecomms) {
+      return
+    }
+
+    const insideIframe = window.testFramecomms.connectTo({
+      id: 'my-frame',
+    })
+
+    insideIframe.call('parentPageFn', 'data')
+    insideIframe.on('@FRAMECOMMS/connected', async () => {
+      console.log('connected')
     })
   })
 
