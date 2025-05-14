@@ -1,3 +1,4 @@
+import {callQueueHandler} from './call-queue'
 import {getId} from './generate-uniq-id'
 import {createRpcHandler} from './rpc'
 import {
@@ -93,6 +94,7 @@ export function createIframe({
     options,
   )
   const rpc = createRpcHandler()
+  const callQueue = callQueueHandler()
   const subscribers: string[] = []
   let hasIframeLoaded = false
 
@@ -122,11 +124,13 @@ export function createIframe({
 
       if (hasIframeLoaded) {
         iframe?.contentWindow?.postMessage(message, origin)
+        callQueue.flush(post)
       } else {
         rpc.register({
           key: iframeLoaded,
           onHandle: async () => {
             iframe?.contentWindow?.postMessage(message, origin)
+            callQueue.flush(post)
           },
         })
       }
@@ -177,13 +181,14 @@ export function createIframe({
     }
 
     if (event.data.type === emitMessage) {
+      const incoming = event.data as EmitMessage
       const message: EmitMessage = {
         type: emitMessage,
         id,
-        reqId: event.data.reqId,
-        event: event.data.event,
-        subscriberId: event.data.subscriberId,
-        payload: event.data.payload,
+        reqId: incoming.reqId,
+        event: incoming.event,
+        subscriberId: incoming.subscriberId,
+        payload: incoming.payload,
       }
       iframe?.contentWindow?.postMessage(message, origin)
       return
@@ -224,6 +229,10 @@ export function createIframe({
     return window.document.querySelector(query).appendChild(fragment)
   }
 
+  const post = (message: Events) => {
+    iframe?.contentWindow?.postMessage(message, origin)
+  }
+
   const call = (method: string, payload: unknown) => {
     return new Promise((resolve, reject) => {
       const reqId = getId()
@@ -244,6 +253,11 @@ export function createIframe({
         reqId,
         method,
         payload,
+      }
+
+      if (subscribers.length === 0) {
+        callQueue.add(message)
+        return
       }
 
       iframe?.contentWindow?.postMessage(message, origin)
@@ -274,6 +288,12 @@ export function createIframe({
       event,
       payload: payload,
     }
+
+    if (subscribers.length === 0) {
+      callQueue.add(message)
+      return
+    }
+
     iframe?.contentWindow?.postMessage(message, origin)
   }
 
