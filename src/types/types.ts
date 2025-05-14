@@ -14,3 +14,7 @@ export type GetContainer = ({
   uid: string
   iframe: HTMLIFrameElement
 }) => HTMLElement
+
+export type Options = {
+  origin?: string
+}

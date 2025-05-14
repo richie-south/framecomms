@@ -5,7 +5,6 @@ import {
   callFnMessage,
   connectedMessage,
   ConnectedMessage,
-  ConnectMessage,
   connectMessage,
   EmitMessage,
   emitMessage,
@@ -13,14 +12,13 @@ import {
   Events,
   pingMessage,
   PingMessage,
-  PongMessage,
   pongMessage,
   responseMessage,
   ResponseMessage,
   updateGlobalsMessage,
   UpdateGlobalsMessage,
 } from './types/post-messages'
-import {Attributes, Available, GetContainer} from './types/types'
+import {Attributes, Available, GetContainer, Options} from './types/types'
 const iframeLoaded = '3q6vOw'
 
 function _parseGlobals(available: Available) {
@@ -35,6 +33,7 @@ function _setUpIframe(
   src: string,
   attributes: Attributes,
   getContainer?: GetContainer,
+  options?: Options,
 ) {
   const uid = `uid_framecomms_${getId()}`
   const iframe = document.createElement('iframe')
@@ -49,7 +48,7 @@ function _setUpIframe(
   iframe.setAttribute('src', src)
   iframe.setAttribute('id', uid)
 
-  const origin = new URL(iframe?.src || '').origin
+  const origin = options.origin ?? new URL(iframe?.src || '').origin
 
   const fragment = document.createDocumentFragment()
   if (getContainer) {
@@ -77,17 +76,24 @@ export function createIframe({
   attributes,
   available,
   container,
+  options,
 }: {
   id: string
   src: string
   attributes?: Attributes
   available?: Available
   container?: GetContainer
+  options?: Options
 }) {
   let globals = _parseGlobals(available)
-  const {fragment, iframe, origin} = _setUpIframe(src, attributes, container)
+  const {fragment, iframe, origin} = _setUpIframe(
+    src,
+    attributes,
+    container,
+    options,
+  )
   const rpc = createRpcHandler()
-  const subscribers = []
+  const subscribers: string[] = []
   let hasIframeLoaded = false
 
   iframe.addEventListener('load', () => {
@@ -104,13 +110,13 @@ export function createIframe({
     }
 
     if (event.data?.type === connectMessage) {
-      const incoming = event.data as unknown as ConnectMessage<string>
-      subscribers.push(incoming.payload)
+      subscribers.push(event.data.payload as string)
 
       const message: ConnectedMessage<typeof globals> = {
         type: connectedMessage,
         id,
-        reqId: incoming.reqId,
+        reqId: event.data.reqId,
+        origin,
         payload: globals,
       }
 
@@ -133,25 +139,21 @@ export function createIframe({
     }
 
     if (event.data?.type === pongMessage) {
-      const incoming = event.data as unknown as PongMessage
-
       rpc.handle({
-        key: `${pongMessage}:${incoming.subscriberId}`,
+        key: `${pongMessage}:${event.data.subscriberId}`,
         payload: '',
       })
       return
     }
 
     if (event.data?.type === callFnMessage) {
-      const incoming = event.data as unknown as CallFnMessage
-
       const availableKeys = Object.keys(available)
-      if (availableKeys.includes(incoming.method)) {
-        const handler = available[incoming.method]
+      if (availableKeys.includes(event.data.method)) {
+        const handler = available[event.data.method]
 
         if (typeof handler === 'function') {
           try {
-            const response = await handler(incoming.payload)
+            const response = await handler(event.data.payload)
             const message: ResponseMessage<typeof response> = {
               type: responseMessage,
               id,
@@ -167,24 +169,21 @@ export function createIframe({
     }
 
     if (event.data.type === responseMessage) {
-      const incoming = event.data as unknown as ResponseMessage
-
       rpc.handle({
-        key: incoming.reqId,
-        payload: incoming.payload,
+        key: event.data.reqId,
+        payload: event.data.payload,
       })
       return
     }
 
     if (event.data.type === emitMessage) {
-      const incoming = event.data as unknown as EmitMessage
       const message: EmitMessage = {
         type: emitMessage,
         id,
-        reqId: incoming.reqId,
-        event: incoming.event,
-        subscriberId: incoming.subscriberId,
-        payload: incoming.payload,
+        reqId: event.data.reqId,
+        event: event.data.event,
+        subscriberId: event.data.subscriberId,
+        payload: event.data.payload,
       }
       iframe?.contentWindow?.postMessage(message, origin)
       return
