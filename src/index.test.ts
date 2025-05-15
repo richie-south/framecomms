@@ -456,3 +456,52 @@ test('parent should be able to subscribe to events', async ({page}) => {
 
   await waitForConsoleLog
 })
+
+test('parent should call function on iframe, iframe registers after creation', async ({
+  page,
+}) => {
+  const waitForConsoleLog = new Promise<void>((resolve) => {
+    page.on('console', (msg) => {
+      const text = msg.text()
+      console.log('b', text)
+      if (text === 'called iframeFn') {
+        resolve()
+      }
+    })
+  })
+  const pageCode = `
+    const parentPage = testFramecomms.createIframe({
+      id: '1',
+      src: '',
+      options: {origin: '*'},
+    })
+
+    parentPage.render('#child')
+
+    setTimeout(async () => {
+      const result = await parentPage.call('iframeFn', 'a')
+      console.log(result)
+    }, 100)
+  `
+
+  const frame = await setUp({page, pageCode})
+
+  await frame.evaluate(() => {
+    if (!window.testFramecomms) {
+      return
+    }
+
+    const insideIframe = window.testFramecomms.connectTo({
+      id: '1',
+      available: {},
+    })
+
+    insideIframe.addAvailable({
+      iframeFn: () => {
+        return 'called iframeFn'
+      },
+    })
+  })
+
+  await waitForConsoleLog
+})
