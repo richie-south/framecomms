@@ -8,9 +8,7 @@ export function callQueueHandler() {
   }
 
   const flush = (callback: (event: Events) => void) => {
-    callQueue.forEach((event) => {
-      callback(event)
-    })
+    callQueue.forEach((event) => callback(event))
     callQueue = []
   }
 
