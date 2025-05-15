@@ -1,6 +1,6 @@
 import {Events} from './types/post-messages'
 
-export function callQueueHandler() {
+export function queueHandler() {
   let callQueue: Events[] = []
 
   const add = (event: Events) => {

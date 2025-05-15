@@ -1,4 +1,4 @@
-import {callQueueHandler} from './call-queue'
+import {queueHandler} from './queue-handler'
 import {onConnectedEvent} from './constants'
 import {createEvents} from './events'
 import {getId} from './generate-uniq-id'
@@ -31,7 +31,7 @@ export function connectTo({
   const subscriberId = getId()
   const rpc = createRpcHandler()
   const events = createEvents()
-  const callQueue = callQueueHandler()
+  const callQueue = queueHandler()
   let isConnected: boolean = false
   let origin: string = '*'
 
