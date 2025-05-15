@@ -191,7 +191,7 @@ export function connectTo({
     events.deregister(event)
   }
 
-  const emit = (event: string, payload: unknown) => {
+  const emit = (event: string, payload?: unknown) => {
     const reqId = getId()
 
     const message: EmitMessage<typeof payload> = {
@@ -211,7 +211,7 @@ export function connectTo({
     _post(message)
   }
 
-  const addAvailable = () => (newAvailable: Available) => {
+  const addAvailable = (newAvailable: Available) => {
     available = {
       ...available,
       ...newAvailable,
