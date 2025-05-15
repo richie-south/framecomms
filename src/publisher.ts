@@ -1,14 +1,16 @@
 import {callQueueHandler} from './call-queue'
+import {onFrameLoadedEvent, onSubscriberEvent} from './constants'
+import {createEvents} from './events'
 import {getId} from './generate-uniq-id'
 import {createRpcHandler} from './rpc'
 import {
-  CallFnMessage,
   callFnMessage,
+  CallFnMessage,
   connectedMessage,
   ConnectedMessage,
   connectMessage,
-  EmitMessage,
   emitMessage,
+  EmitMessage,
   EmitMessagePublisher,
   Events,
   pingMessage,
@@ -25,7 +27,7 @@ const iframeLoaded = '3q6vOw'
 function _parseGlobals(available: Available) {
   return Object.fromEntries(
     Object.entries(available ?? {}).filter(
-      ([key, value]) => typeof value !== 'function',
+      ([, value]) => typeof value !== 'function',
     ),
   )
 }
@@ -93,13 +95,16 @@ export function createIframe({
     container,
     options,
   )
+
   const rpc = createRpcHandler()
   const callQueue = callQueueHandler()
+  const events = createEvents()
   const subscribers: string[] = []
   let hasIframeLoaded = false
 
   iframe.addEventListener('load', () => {
     hasIframeLoaded = true
+    events.handle(onFrameLoadedEvent)
     rpc.handle({
       key: iframeLoaded,
       payload: '',
@@ -117,6 +122,7 @@ export function createIframe({
 
     if (event.data?.type === connectMessage) {
       subscribers.push(event.data.payload as string)
+      events.handle(onSubscriberEvent)
 
       const message: ConnectedMessage<typeof globals> = {
         type: connectedMessage,
@@ -195,6 +201,7 @@ export function createIframe({
         payload: incoming.payload,
       }
       _post(message)
+      events.handle(event.data.event, event.data.payload)
       return
     }
   }
@@ -233,18 +240,14 @@ export function createIframe({
     return window.document.querySelector(query).appendChild(fragment)
   }
 
-  const call = (method: string, payload: unknown) => {
+  const call = <T = unknown>(method: string, payload?: unknown): Promise<T> => {
     return new Promise((resolve, reject) => {
       const reqId = getId()
 
       rpc.register({
         key: reqId,
-        onHandle: async (resurnParams) => {
-          resolve(resurnParams)
-        },
-        onDeregister: () => {
-          reject(new Error(`No reponse ${method}`))
-        },
+        onHandle: async (value) => resolve(value as T),
+        onDeregister: () => reject(new Error(`No reponse ${method}`)),
       })
 
       const message: CallFnMessage<typeof payload> = {
@@ -297,6 +300,13 @@ export function createIframe({
     _post(message)
   }
 
+  const on = <T = unknown>(
+    event: string,
+    callback: (params?: unknown) => Promise<T>,
+  ) => {
+    events.register(event, callback)
+  }
+
   window.addEventListener('message', _onEvent, false)
   _ping()
 
@@ -304,6 +314,7 @@ export function createIframe({
     render,
     call,
     emit,
+    on,
     addAvailable,
   }
 }
