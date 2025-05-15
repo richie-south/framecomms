@@ -8,7 +8,7 @@ type RpcRegister = {
 
 interface RpcRequest {
   key: string
-  payload: unknown
+  payload?: unknown
 }
 
 interface RpcResponse {

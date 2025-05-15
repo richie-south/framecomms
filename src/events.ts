@@ -1,4 +1,4 @@
-type Method = (params: unknown) => void
+type Method = (params?: unknown) => void
 
 export function createEvents() {
   const methods = new Map<string, Array<Method>>()
@@ -12,7 +12,7 @@ export function createEvents() {
     return existed
   }
 
-  const handle = (key: string, payload: unknown) => {
+  const handle = (key: string, payload?: unknown) => {
     const fns = methods.get(key)
 
     if (Array.isArray(fns)) {
