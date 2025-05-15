@@ -463,7 +463,6 @@ test('parent should call function on iframe, iframe registers after creation', a
   const waitForConsoleLog = new Promise<void>((resolve) => {
     page.on('console', (msg) => {
       const text = msg.text()
-      console.log('b', text)
       if (text === 'called iframeFn') {
         resolve()
       }
@@ -500,6 +499,45 @@ test('parent should call function on iframe, iframe registers after creation', a
       iframeFn: () => {
         return 'called iframeFn'
       },
+    })
+  })
+
+  await waitForConsoleLog
+})
+
+test('iframe should get parent emit for new subscriber', async ({page}) => {
+  const waitForConsoleLog = new Promise<void>((resolve) => {
+    page.on('console', (msg) => {
+      const text = msg.text()
+      if (text === 'iframe-loaded') {
+        resolve()
+      }
+    })
+  })
+  const pageCode = `
+    const parentPage = testFramecomms.createIframe({
+      id: '1',
+      src: '',
+      options: {origin: '*'},
+    })
+
+    parentPage.render('#child')
+  `
+
+  const frame = await setUp({page, pageCode})
+
+  await frame.evaluate(() => {
+    if (!window.testFramecomms) {
+      return
+    }
+
+    const insideIframe = window.testFramecomms.connectTo({
+      id: '1',
+      available: {},
+    })
+
+    insideIframe.on('@FRAMECOMMS/onSubscriber', () => {
+      console.log('iframe-loaded')
     })
   })
 

@@ -1,4 +1,4 @@
-import {callQueueHandler} from './call-queue'
+import {queueHandler} from './queue-handler'
 import {onFrameLoadedEvent, onSubscriberEvent} from './constants'
 import {createEvents} from './events'
 import {getId} from './generate-uniq-id'
@@ -97,14 +97,14 @@ export function createIframe({
   )
 
   const rpc = createRpcHandler()
-  const callQueue = callQueueHandler()
+  const callQueue = queueHandler()
   const events = createEvents()
   const subscribers: string[] = []
   let hasIframeLoaded = false
 
   iframe.addEventListener('load', () => {
     hasIframeLoaded = true
-    events.handle(onFrameLoadedEvent)
+    _emitNoQueue(onFrameLoadedEvent)
     rpc.handle({
       key: iframeLoaded,
       payload: '',
@@ -122,7 +122,6 @@ export function createIframe({
 
     if (event.data?.type === connectMessage) {
       subscribers.push(event.data.payload as string)
-      events.handle(onSubscriberEvent)
 
       const message: ConnectedMessage<typeof globals> = {
         type: connectedMessage,
@@ -135,12 +134,14 @@ export function createIframe({
       if (hasIframeLoaded) {
         _post(message)
         callQueue.flush(_post)
+        emit(onSubscriberEvent)
       } else {
         rpc.register({
           key: iframeLoaded,
           onHandle: async () => {
             _post(message)
             callQueue.flush(_post)
+            emit(onSubscriberEvent)
           },
         })
       }
@@ -284,13 +285,26 @@ export function createIframe({
     _post(message)
   }
 
-  const emit = (event: string, payload: unknown) => {
+  const _emitNoQueue = (event: string, payload?: unknown) => {
     const message: EmitMessagePublisher = {
       type: emitMessage,
       id,
       event,
       payload: payload,
     }
+
+    events.handle(event, payload)
+    _post(message)
+  }
+
+  const emit = (event: string, payload?: unknown) => {
+    const message: EmitMessagePublisher = {
+      type: emitMessage,
+      id,
+      event,
+      payload: payload,
+    }
+    events.handle(event, payload)
 
     if (subscribers.length === 0) {
       callQueue.add(message)
