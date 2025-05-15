@@ -1,10 +1,11 @@
 import {callQueueHandler} from './call-queue'
+import {onConnectedEvent} from './constants'
 import {createEvents} from './events'
 import {getId} from './generate-uniq-id'
 import {createRpcHandler} from './rpc'
 import {
-  CallFnMessage,
   callFnMessage,
+  CallFnMessage,
   connectedMessage,
   connectMessage,
   ConnectMessage,
@@ -106,7 +107,6 @@ export function connectTo({
     }
 
     if (event.data.type === updateGlobalsMessage) {
-      // TODO: handle this as a get function instead of poluting window
       window.framecommsProps = event.data.payload
       return
     }
@@ -126,7 +126,7 @@ export function connectTo({
         onHandle: async (payload) => {
           isConnected = true
           window.framecommsProps = payload
-          events.handle(connectedMessage, payload)
+          events.handle(onConnectedEvent, payload)
           callQueue.flush(_post)
 
           resolve(true)
@@ -154,12 +154,8 @@ export function connectTo({
 
       rpc.register({
         key: reqId,
-        onHandle: async (returns) => {
-          resolve(returns as T)
-        },
-        onDeregister: () => {
-          reject(new Error(`No reponse ${method}`))
-        },
+        onHandle: async (value) => resolve(value as T),
+        onDeregister: () => reject(new Error(`No reponse ${method}`)),
       })
 
       const message: CallFnMessage<typeof payload> = {
@@ -182,7 +178,7 @@ export function connectTo({
 
   const on = <T = unknown>(
     event: string,
-    callback: (params: unknown) => Promise<T>,
+    callback: (params?: unknown) => Promise<T>,
   ) => {
     events.register(event, callback)
 
@@ -215,6 +211,13 @@ export function connectTo({
     _post(message)
   }
 
+  const addAvailable = () => (newAvailable: Available) => {
+    available = {
+      ...available,
+      ...newAvailable,
+    }
+  }
+
   window.addEventListener('message', _onEvent, false)
   _connect()
 
@@ -223,11 +226,6 @@ export function connectTo({
     on,
     removeListener,
     emit,
-    addAvailable: (newAvailable: Available) => {
-      available = {
-        ...available,
-        ...newAvailable,
-      }
-    },
+    addAvailable,
   }
 }
