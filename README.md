@@ -19,7 +19,7 @@ const parentPage = createIframe({
 
 // inside iframe
 
-const insideIframe = connectToIframe({
+const insideIframe = connectTo({
   id: 'my-frame',
   available: {
     insideIframeFn: () => {
