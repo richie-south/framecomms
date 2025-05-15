@@ -19,6 +19,11 @@
       "require": "./lib/publisher.js",
       "import": "./lib/publisher.js",
       "types": "./lib/publisher.d.ts"
+    },
+    "./constants": {
+      "require": "./lib/constants.js",
+      "import": "./lib/constants.js",
+      "types": "./lib/constants.d.ts"
     }
   },
   "typesVersions": {
