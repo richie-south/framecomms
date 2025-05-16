@@ -21,6 +21,8 @@ const parentPage = createIframe({
   id: 'my-frame',
   src: '',
 })
+
+parentPage.render('#query_to_element')
 ```
 
 ### Subscriber
@@ -41,7 +43,8 @@ insideIframe.call('parentPageFn', {id: 1})
 
 ### Functions
 
-Add functions to `available` object, and they will be available for subscribers / publisher
+Add functions to `available` object, and they will be available for subscribers / publisher.
+You can also add `available` later with `.addAvailable({})` property function.
 
 ```typescript
 import {createIframe} from 'framecomms/publisher'
@@ -55,6 +58,7 @@ const parentPage = createIframe({
     },
   },
 })
+parentPage.render('#query_to_element')
 ```
 
 ```typescript
@@ -84,6 +88,7 @@ const parentPage = createIframe({
     userId: 10,
   },
 })
+parentPage.render('#query_to_element')
 ```
 
 ```typescript
@@ -110,7 +115,7 @@ const parentPage = createIframe({
   id: 'my-frame',
   src: '',
 })
-
+parentPage.render('#query_to_element')
 parentPage.emit('my event', {userId: 10})
 ```
 
@@ -143,6 +148,7 @@ const parentPage = createIframe({
   id: 'my-frame',
   src: '',
 })
+parentPage.render('#query_to_element')
 
 parentPage.on(onFrameLoadedEvent, () => {
   // iframe has loaded
