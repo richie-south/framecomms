@@ -30,7 +30,7 @@ parentPage.render('#query_to_element')
 Handles comunication with pulisher. Get props, call functions on parent page, get returns, events etc from publisher
 
 ```typescript
-import {createIframe} from 'framecomms/subscriber'
+import {connectTo} from 'framecomms/subscriber'
 
 const insideIframe = connectTo({
   id: 'my-frame',,
@@ -62,7 +62,7 @@ parentPage.render('#query_to_element')
 ```
 
 ```typescript
-import {createIframe} from 'framecomms/subscriber'
+import {connectTo} from 'framecomms/subscriber'
 
 const insideIframe = connectTo({
   id: 'my-frame',
@@ -92,7 +92,7 @@ parentPage.render('#query_to_element')
 ```
 
 ```typescript
-import {createIframe} from 'framecomms/subscriber'
+import {connectTo} from 'framecomms/subscriber'
 
 const insideIframe = connectTo({
   id: 'my-frame',
@@ -120,7 +120,7 @@ parentPage.emit('my event', {userId: 10})
 ```
 
 ```typescript
-import {createIframe} from 'framecomms/subscriber'
+import {connectTo} from 'framecomms/subscriber'
 
 const insideIframe = connectTo({
   id: 'my-frame',
@@ -160,7 +160,7 @@ parentPage.on(onSubscriberEvent, () => {
 ```
 
 ```typescript
-import {createIframe} from 'framecomms/subscriber'
+import {connectTo} from 'framecomms/subscriber'
 import {
   onSubscriberEvent,
   onFrameLoadedEvent,
