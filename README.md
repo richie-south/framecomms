@@ -10,30 +10,58 @@ Basics of normalized/standardised iframe communication intended to be a lightwei
 npm i framecomms
 ```
 
-### Publisher
+### Parent
 
-Run on host page, this creates and controls your iframe. Pass properties, Call functions, get returns, events etc from subscribers
+Run on host page, this creates and controls your iframes. Pass properties, Call functions, get returns, events etc from subscribers
 
 ```typescript
-import {createIframe} from 'framecomms/publisher'
+import {parent} from 'framecomms/parent'
 
-const parentPage = createIframe({
+const parentPage = parent({
+  id: 'parent',
+})
+
+const myIframe = parentPage.createIframe({
+  id: 'my-iframe',
+  src: '',
+})
+
+myIframe.render('#query_to_element')
+```
+
+Create multible iframes
+
+```typescript
+import {parent} from 'framecomms/parent'
+
+const parentPage = parent({
+  id: 'parent',
+})
+
+const myFrame = parentPage.createIframe({
   id: 'my-frame',
   src: '',
 })
 
-parentPage.render('#query_to_element')
+myFrame.render('#query_to_element')
+
+const myFrame2 = myPage.createIframe({
+  id: 'my-frame-2',
+  src: '',
+})
+
+myFrame2.render('#query_to_element_2')
 ```
 
 ### Subscriber
 
-Handles comunication with pulisher. Get props, call functions on parent page, get returns, events etc from publisher
+Handles comunication with pulisher. Get props, call functions on parent page or other iframes, get returns, events etc from parent
 
 ```typescript
 import {connectTo} from 'framecomms/subscriber'
 
 const insideIframe = connectTo({
-  id: 'my-frame',,
+  id: 'parent',,
 })
 
 insideIframe.call('parentPageFn', {id: 1})
@@ -43,29 +71,38 @@ insideIframe.call('parentPageFn', {id: 1})
 
 ### Functions
 
-Add functions to `available` object, and they will be available for subscribers / publisher.
+Add functions to `available` object, and they will be available for subscribers / parent.
 You can also add `available` later with `.addAvailable({})` property function.
 
-```typescript
-import {createIframe} from 'framecomms/publisher'
+Host page:
 
-const parentPage = createIframe({
-  id: 'my-frame',
-  src: '',
+```typescript
+import {parent} from 'framecomms/parent'
+
+const parentPage = parent({
+  id: 'parent',
   available: {
     parentFn: (property) => {
       return property + 10
     },
   },
 })
-parentPage.render('#query_to_element')
+
+const myIframe = parentPage.createIframe({
+  id: 'my-frame',
+  src: '',
+})
+
+myIframe.render('#query_to_element')
 ```
+
+Inside iframes:
 
 ```typescript
 import {connectTo} from 'framecomms/subscriber'
 
 const insideIframe = connectTo({
-  id: 'my-frame',
+  id: 'parent',
   available: {},
 })
 
@@ -78,24 +115,33 @@ insideIframe.call('parentFn', 10).then((result) => {
 
 Values that are not functions in `available` object can be accessed from `window.framecommsProps`
 
-```typescript
-import {createIframe} from 'framecomms/publisher'
+Host page:
 
-const parentPage = createIframe({
-  id: 'my-frame',
-  src: '',
+```typescript
+import {parent} from 'framecomms/parent'
+
+const parentPage = parent({
+  id: 'parent',
   available: {
     userId: 10,
   },
 })
-parentPage.render('#query_to_element')
+
+const myIframe = parentPage.createIframe({
+  id: 'my-frame',
+  src: '',
+})
+
+myIframe.render('#query_to_element')
 ```
+
+Inside iframes:
 
 ```typescript
 import {connectTo} from 'framecomms/subscriber'
 
 const insideIframe = connectTo({
-  id: 'my-frame',
+  id: 'parent',
   available: {},
 })
 
@@ -104,26 +150,35 @@ console.log(window.framecommsProps.userId) // 10
 
 ### Events
 
-Listen and emit events from subscribers / publisher
+Listen and emit events from subscribers / parent
 
 #### Custom events
 
-```typescript
-import {createIframe} from 'framecomms/publisher'
+Host page:
 
-const parentPage = createIframe({
+```typescript
+import {parent} from 'framecomms/parent'
+
+const parentPage = parent({
+  id: 'parent',
+})
+
+const myIframe = parentPage.createIframe({
   id: 'my-frame',
   src: '',
 })
-parentPage.render('#query_to_element')
+
+myIframe.render('#query_to_element')
 parentPage.emit('my event', {userId: 10})
 ```
+
+Inside iframes:
 
 ```typescript
 import {connectTo} from 'framecomms/subscriber'
 
 const insideIframe = connectTo({
-  id: 'my-frame',
+  id: 'parent',
   available: {},
 })
 
@@ -134,21 +189,27 @@ insideIframe.on('my event', (data) => {
 
 #### Built-in events
 
-There are a few built-in events available, which can be imported from 'framecomms/constants'. These events can be listened to by both publishers and subscribers.
+There are a few built-in events available, which can be imported from 'framecomms/constants'. These events can be listened to by both parents and subscribers.
+
+Host page:
 
 ```typescript
-import {createIframe} from 'framecomms/publisher'
+import {parent} from 'framecomms/parent'
 import {
   onSubscriberEvent,
   onFrameLoadedEvent,
   onConnectedEvent,
 } from 'framecomms/constants'
 
-const parentPage = createIframe({
+const parentPage = parent({
+  id: 'parent',
+})
+const myIframe = parentPage.createIframe({
   id: 'my-frame',
   src: '',
 })
-parentPage.render('#query_to_element')
+
+myIframe.render('#query_to_element')
 
 parentPage.on(onFrameLoadedEvent, () => {
   // iframe has loaded
@@ -159,6 +220,8 @@ parentPage.on(onSubscriberEvent, () => {
 })
 ```
 
+Inside iframes:
+
 ```typescript
 import {connectTo} from 'framecomms/subscriber'
 import {
@@ -168,7 +231,7 @@ import {
 } from 'framecomms/constants'
 
 const insideIframe = connectTo({
-  id: 'my-frame',
+  id: 'parent',
   available: {},
 })
 
