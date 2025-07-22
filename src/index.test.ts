@@ -1,4 +1,4 @@
-import {test} from '@playwright/test'
+import {Page, test} from '@playwright/test'
 import fs from 'fs'
 import path from 'path'
 
@@ -12,13 +12,13 @@ declare global {
 const libPath = path.resolve(__dirname, '../dist/testFramecomms.umd.js')
 const libCode = fs.readFileSync(libPath, 'utf8')
 
-async function setUp({page, pageCode}: any) {
+async function setUp({page, pageCode}: {page: Page; pageCode: string}) {
   page.on('pageerror', (err) => {
-    console.error('❌ Page error:', err.message)
+    console.error('Page error:', err.message)
   })
 
   page.on('crash', () => {
-    console.error('🔥 Page crashed!')
+    console.error('Page crashed!')
   })
 
   await page.setContent(`
@@ -26,6 +26,7 @@ async function setUp({page, pageCode}: any) {
     <html>
       <body>
         <div id="child"></div>
+        <div id="child2"></div>
         <script>
           ${libCode}
           ${pageCode}
@@ -35,9 +36,31 @@ async function setUp({page, pageCode}: any) {
     </html>
   `)
 
-  const iframeHandle = await page.$('iframe')
+  /* const iframeHandle = await page.$('iframe') */
+  const iframesHandles = await page.$$('iframe')
+  return await Promise.all(
+    iframesHandles.map(async (iframeHandle) => {
+      // Use srcdoc to define an initial HTML with a script placeholder
+      await iframeHandle!.evaluate((el) => {
+        el.setAttribute('srcdoc', '<html><body></body></html>')
+      })
 
-  // Use srcdoc to define an initial HTML with a script placeholder
+      // Wait for iframe to load
+      const frame = await (await iframeHandle!.contentFrame())!
+
+      // Inject libCode in the iframe
+      await frame.evaluate((code: string) => {
+        const script = document.createElement('script')
+        script.type = 'text/javascript'
+        script.textContent = code
+        document.body.appendChild(script)
+      }, libCode)
+
+      return frame
+    }),
+  )
+
+  /*  // Use srcdoc to define an initial HTML with a script placeholder
   await iframeHandle!.evaluate((el) => {
     el.setAttribute('srcdoc', '<html><body></body></html>')
   })
@@ -45,7 +68,7 @@ async function setUp({page, pageCode}: any) {
   // Wait for iframe to load
   const frame = await (await iframeHandle!.contentFrame())!
 
-  // Now inject your built libCode as a <script> tag in the iframe
+  // Inject libCode in the iframe
   await frame.evaluate((code: string) => {
     const script = document.createElement('script')
     script.type = 'text/javascript'
@@ -53,7 +76,7 @@ async function setUp({page, pageCode}: any) {
     document.body.appendChild(script)
   }, libCode)
 
-  return frame
+  return frame */
 }
 
 test('should connect to parent from iframe', async ({page}) => {
@@ -67,16 +90,21 @@ test('should connect to parent from iframe', async ({page}) => {
     })
   })
   const pageCode = `
-    const parentPage = testFramecomms.createIframe({
+    const parentPage = testFramecomms.parent({
       id: '1',
-      src: '',
       options: {origin: '*'}
     })
 
-    parentPage.render('#child')
+    const myFrame = parentPage.createIframe({
+      id: 'my-frame',
+      src: '',
+    })
+
+    myFrame.render('#child')
   `
 
-  const frame = await setUp({page, pageCode})
+  const frames = await setUp({page, pageCode})
+  const frame = frames[0]
 
   await frame.evaluate(() => {
     if (!window.testFramecomms) {
@@ -106,9 +134,8 @@ test('iframe should call function to parent', async ({page}) => {
   })
 
   const pageCode = `
-    const parentPage = testFramecomms.createIframe({
-      id: 'my-frame',
-      src: '',
+    const parentPage = testFramecomms.parent({
+      id: 'my-parent',
       options: {origin: '*'},
       available: {
         parentPageFn: (params) => {
@@ -117,10 +144,16 @@ test('iframe should call function to parent', async ({page}) => {
       },
     })
 
-    parentPage.render('#child')
+    const myFrame = parentPage.createIframe({
+      id: 'my-frame',
+      src: '',
+    })
+
+    myFrame.render('#child')
   `
 
-  const frame = await setUp({page, pageCode})
+  const frames = await setUp({page, pageCode})
+  const frame = frames[0]
 
   // Inject custom test code into the iframe, that uses your lib
   await frame.evaluate(() => {
@@ -129,7 +162,7 @@ test('iframe should call function to parent', async ({page}) => {
     }
 
     const insideIframe = window.testFramecomms.connectTo({
-      id: 'my-frame',
+      id: 'my-parent',
     })
 
     insideIframe.on('@FRAMECOMMS/onConnected', () => {
@@ -150,18 +183,24 @@ test('parent should call function to iframe', async ({page}) => {
     })
   })
   const pageCode = `
-    const parentPage = testFramecomms.createIframe({
-      id: 'my-frame',
-      src: '',
+    const parentPage = testFramecomms.parent({
+      id: 'my-parent',
       options: {origin: '*'},
       available: {}
     })
 
-    parentPage.render('#child')
+    const myFrame = parentPage.createIframe({
+      id: 'my-frame',
+      src: '',
+    })
+
+    myFrame.render('#child')
+
     parentPage.call('iframeFn', 'a')
   `
 
-  const frame = await setUp({page, pageCode})
+  const frames = await setUp({page, pageCode})
+  const frame = frames[0]
 
   await frame.evaluate(() => {
     if (!window.testFramecomms) {
@@ -169,7 +208,7 @@ test('parent should call function to iframe', async ({page}) => {
     }
 
     const insideIframe = window.testFramecomms.connectTo({
-      id: 'my-frame',
+      id: 'my-parent',
       available: {
         iframeFn: () => {
           console.log('called iframeFn')
@@ -194,19 +233,24 @@ test('iframe should access parent props on window.framecommsProps', async ({
     })
   })
   const pageCode = `
-    const parentPage = testFramecomms.createIframe({
+    const parentPage = testFramecomms.parent({
       id: '1',
-      src: '',
       options: {origin: '*'},
       available: {
         myPropery: 'propery value'
       }
     })
 
-    parentPage.render('#child')
+    const myFrame = parentPage.createIframe({
+      id: 'my-frame',
+      src: '',
+    })
+
+    myFrame.render('#child')
   `
 
-  const frame = await setUp({page, pageCode})
+  const frames = await setUp({page, pageCode})
+  const frame = frames[0]
 
   await frame.evaluate(() => {
     if (!window.testFramecomms) {
@@ -239,9 +283,8 @@ test('iframe should call function to parent and receive return value', async ({
   })
 
   const pageCode = `
-    const parentPage = testFramecomms.createIframe({
-      id: 'my-frame',
-      src: '',
+    const parentPage = testFramecomms.parent({
+      id: 'my-parent',
       options: {origin: '*'},
       available: {
         parentPageFn: (params) => {
@@ -250,10 +293,16 @@ test('iframe should call function to parent and receive return value', async ({
       },
     })
 
-    parentPage.render('#child')
+    const myFrame = parentPage.createIframe({
+      id: 'my-frame',
+      src: '',
+    })
+
+    myFrame.render('#child')
   `
 
-  const frame = await setUp({page, pageCode})
+  const frames = await setUp({page, pageCode})
+  const frame = frames[0]
 
   // Inject custom test code into the iframe, that uses your lib
   await frame.evaluate(() => {
@@ -262,7 +311,7 @@ test('iframe should call function to parent and receive return value', async ({
     }
 
     const insideIframe = window.testFramecomms.connectTo({
-      id: 'my-frame',
+      id: 'my-parent',
     })
 
     insideIframe.on('@FRAMECOMMS/onConnected', async () => {
@@ -287,13 +336,17 @@ test('parent should call function to iframe and receive return value', async ({
     })
   })
   const pageCode = `
-    const parentPage = testFramecomms.createIframe({
+    const parentPage = testFramecomms.parent({
       id: '1',
-      src: '',
       options: {origin: '*'},
     })
 
-    parentPage.render('#child')
+    const myFrame = parentPage.createIframe({
+      id: 'my-frame',
+      src: '',
+    })
+
+    myFrame.render('#child')
 
     setTimeout(async () => {
       const result = await parentPage.call('iframeFn', 'a')
@@ -301,7 +354,8 @@ test('parent should call function to iframe and receive return value', async ({
     }, 100)
   `
 
-  const frame = await setUp({page, pageCode})
+  const frames = await setUp({page, pageCode})
+  const frame = frames[0]
 
   await frame.evaluate(() => {
     if (!window.testFramecomms) {
@@ -332,20 +386,25 @@ test('iframe should subscribe to on and parent can emit', async ({page}) => {
     })
   })
   const pageCode = `
-    const parentPage = testFramecomms.createIframe({
+    const parentPage = testFramecomms.parent({
       id: '1',
-      src: '',
       options: {origin: '*'},
     })
 
-    parentPage.render('#child')
+    const myFrame = parentPage.createIframe({
+      id: 'my-frame',
+      src: '',
+    })
+
+    myFrame.render('#child')
 
     setTimeout(async () => {
       await parentPage.emit('subscriber', 'param from emit')
     }, 100)
   `
 
-  const frame = await setUp({page, pageCode})
+  const frames = await setUp({page, pageCode})
+  const frame = frames[0]
 
   await frame.evaluate(() => {
     if (!window.testFramecomms) {
@@ -379,9 +438,8 @@ test('iframe should queue calls parent if its not connected', async ({
   })
 
   const pageCode = `
-    const parentPage = testFramecomms.createIframe({
-      id: 'my-frame',
-      src: '',
+    const parentPage = testFramecomms.parent({
+      id: 'my-parent',
       options: {origin: '*'},
       available: {
         parentPageFn: (params) => {
@@ -390,10 +448,16 @@ test('iframe should queue calls parent if its not connected', async ({
       },
     })
 
-    parentPage.render('#child')
+    const myFrame = parentPage.createIframe({
+      id: 'my-frame',
+      src: '',
+    })
+
+    myFrame.render('#child')
   `
 
-  const frame = await setUp({page, pageCode})
+  const frames = await setUp({page, pageCode})
+  const frame = frames[0]
 
   // Inject custom test code into the iframe, that uses your lib
   await frame.evaluate(() => {
@@ -402,7 +466,7 @@ test('iframe should queue calls parent if its not connected', async ({
     }
 
     const insideIframe = window.testFramecomms.connectTo({
-      id: 'my-frame',
+      id: 'my-parent',
     })
 
     insideIframe.call('parentPageFn', 'data')
@@ -425,21 +489,26 @@ test('parent should be able to subscribe to events', async ({page}) => {
   })
 
   const pageCode = `
-    const parentPage = testFramecomms.createIframe({
-      id: 'my-frame',
-      src: '',
+    const parentPage = testFramecomms.parent({
+      id: 'my-parent',
       options: {origin: '*'},
       available: {},
     })
 
-    parentPage.render('#child')
+    const myFrame = parentPage.createIframe({
+      id: 'my-frame',
+      src: '',
+    })
+
+    myFrame.render('#child')
 
     parentPage.on('custom-event', (value) => {
       console.log(value)
     })
   `
 
-  const frame = await setUp({page, pageCode})
+  const frames = await setUp({page, pageCode})
+  const frame = frames[0]
 
   // Inject custom test code into the iframe, that uses your lib
   await frame.evaluate(() => {
@@ -448,7 +517,7 @@ test('parent should be able to subscribe to events', async ({page}) => {
     }
 
     const insideIframe = window.testFramecomms.connectTo({
-      id: 'my-frame',
+      id: 'my-parent',
     })
 
     insideIframe.emit('custom-event', 'custom-event-value')
@@ -469,13 +538,17 @@ test('parent should call function on iframe, iframe registers after creation', a
     })
   })
   const pageCode = `
-    const parentPage = testFramecomms.createIframe({
+    const parentPage = testFramecomms.parent({
       id: '1',
-      src: '',
       options: {origin: '*'},
     })
 
-    parentPage.render('#child')
+    const myFrame = parentPage.createIframe({
+      id: 'my-frame',
+      src: '',
+    })
+
+    myFrame.render('#child')
 
     setTimeout(async () => {
       const result = await parentPage.call('iframeFn', 'a')
@@ -483,7 +556,8 @@ test('parent should call function on iframe, iframe registers after creation', a
     }, 100)
   `
 
-  const frame = await setUp({page, pageCode})
+  const frames = await setUp({page, pageCode})
+  const frame = frames[0]
 
   await frame.evaluate(() => {
     if (!window.testFramecomms) {
@@ -515,16 +589,21 @@ test('iframe should get parent emit for new subscriber', async ({page}) => {
     })
   })
   const pageCode = `
-    const parentPage = testFramecomms.createIframe({
+    const parentPage = testFramecomms.parent({
       id: '1',
-      src: '',
       options: {origin: '*'},
     })
 
-    parentPage.render('#child')
+    const myFrame = parentPage.createIframe({
+      id: 'my-frame',
+      src: '',
+    })
+
+    myFrame.render('#child')
   `
 
-  const frame = await setUp({page, pageCode})
+  const frames = await setUp({page, pageCode})
+  const frame = frames[0]
 
   await frame.evaluate(() => {
     if (!window.testFramecomms) {
@@ -539,6 +618,102 @@ test('iframe should get parent emit for new subscriber', async ({page}) => {
     insideIframe.on('@FRAMECOMMS/onSubscriber', () => {
       console.log('iframe-loaded')
     })
+  })
+
+  await waitForConsoleLog
+})
+
+test('parent should be able to create multible iframes', async ({page}) => {
+  const pageCode = `
+    const parentPage = testFramecomms.parent({
+      id: '1',
+      options: {origin: '*'},
+    })
+
+    const myFrame = parentPage.createIframe({
+      id: 'my-frame',
+      src: '',
+    })
+
+    const myFrame2 = parentPage.createIframe({
+      id: 'my-frame-2',
+      src: '2',
+    })
+
+    myFrame.render('#child')
+    myFrame2.render('#child2')
+  `
+
+  await setUp({page, pageCode})
+  const iframes = page.locator('iframe')
+  const iframeCount = await iframes.count()
+
+  if (iframeCount !== 2) {
+    throw new Error('not correct nr of iframes')
+  }
+})
+
+test('iframe should be able to call fn of another iframe', async ({page}) => {
+  const waitForConsoleLog = new Promise<void>((resolve) => {
+    page.on('console', (msg) => {
+      const text = msg.text()
+      if (text === 'called frame1Fn') {
+        resolve()
+      }
+    })
+  })
+  const pageCode = `
+    const parentPage = testFramecomms.parent({
+      id: '1',
+      options: {origin: '*'},
+      available: {},
+    })
+
+    const myFrame = parentPage.createIframe({
+      id: 'my-frame',
+      src: '',
+    })
+
+    const myFrame2 = parentPage.createIframe({
+      id: 'my-frame-2',
+      src: '2',
+    })
+
+    myFrame.render('#child')
+    myFrame2.render('#child2')
+  `
+
+  const frames = await setUp({page, pageCode})
+  const frame1 = frames[0]
+  const frame2 = frames[0]
+
+  await frame1.evaluate(() => {
+    if (!window.testFramecomms) {
+      return
+    }
+
+    window.testFramecomms.connectTo({
+      id: '1',
+      available: {
+        frame1Fn: () => {
+          console.log('called frame1Fn')
+        },
+      },
+    })
+  })
+
+  await frame2.evaluate(() => {
+    if (!window.testFramecomms) {
+      return
+    }
+
+    const insideIframe = window.testFramecomms.connectTo({
+      id: '1',
+      available: {},
+    })
+
+    // calling function in frame1 from frame2 by passing call to parent then to suscriber
+    insideIframe.call('frame1Fn')
   })
 
   await waitForConsoleLog
