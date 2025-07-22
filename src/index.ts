@@ -1,3 +1,3 @@
-export {createIframe} from './publisher'
+export {parent} from './parent'
 export {connectTo} from './subscriber'
 export * from './constants'

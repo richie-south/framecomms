@@ -26,7 +26,7 @@ const iframeLoaded = '3q6vOw'
 
 function _parseGlobals(available: Available) {
   return Object.fromEntries(
-    Object.entries(available ?? {}).filter(
+    Object.entries(available).filter(
       ([, value]) => typeof value !== 'function',
     ),
   )
@@ -38,7 +38,7 @@ function _setUpIframe(
   getContainer?: GetContainer,
   options?: Options,
 ) {
-  const uid = `uid_framecomms_${getId()}`
+  const uid = `FRAME_${getId()}`
   const iframe = document.createElement('iframe')
 
   if (attributes && attributes.iframe) {
@@ -73,46 +73,33 @@ function _setUpIframe(
   }
 }
 
-export function createIframe({
+export function parent({
   id,
-  src,
-  attributes,
-  available,
-  container,
+  available = {},
   options,
 }: {
   id: string
-  src: string
-  attributes?: Attributes
   available?: Available
-  container?: GetContainer
   options?: Options
 }) {
   let globals = _parseGlobals(available)
-  const {fragment, iframe, origin} = _setUpIframe(
-    src,
-    attributes,
-    container,
-    options,
-  )
+  let hasAnyIframeLoaded = false
 
+  const origin = options?.origin ?? '*'
+  const subscribers: string[] = []
+  const iframes: {
+    id: string
+    origin: string
+    iframe: HTMLIFrameElement
+  }[] = []
   const rpc = createRpcHandler()
   const callQueue = queueHandler()
   const events = createEvents()
-  const subscribers: string[] = []
-  let hasIframeLoaded = false
 
-  iframe.addEventListener('load', () => {
-    hasIframeLoaded = true
-    _emitNoQueue(onFrameLoadedEvent)
-    rpc.handle({
-      key: iframeLoaded,
-      payload: '',
+  const _post = (message: Events) => {
+    iframes.forEach(({iframe, origin: o}) => {
+      iframe?.contentWindow?.postMessage(message, o ?? '*')
     })
-  })
-
-  const _post = (message: Events, o = origin) => {
-    iframe?.contentWindow?.postMessage(message, o)
   }
 
   const _onEvent = async (event: MessageEvent<Events>) => {
@@ -131,7 +118,7 @@ export function createIframe({
         payload: globals,
       }
 
-      if (hasIframeLoaded) {
+      if (hasAnyIframeLoaded) {
         _post(message)
         callQueue.flush(_post)
         emit(onSubscriberEvent)
@@ -175,11 +162,14 @@ export function createIframe({
               reqId: event.data.reqId,
               payload: response,
             }
-            _post(message, '*')
+            _post(message)
           } catch (error) {}
         }
 
         return
+      } else {
+        // fn might be available on any subscriber
+        call(event.data.method, event.data.payload)
       }
     }
 
@@ -237,7 +227,7 @@ export function createIframe({
     }, 40_000)
   }
 
-  const render = (query: string) => {
+  const render = (fragment: DocumentFragment) => (query: string) => {
     return window.document.querySelector(query).appendChild(fragment)
   }
 
@@ -285,7 +275,7 @@ export function createIframe({
     _post(message)
   }
 
-  const _emitNoQueue = (event: string, payload?: unknown) => {
+  const _emitWithNoQueue = (event: string, payload?: unknown) => {
     const message: EmitMessagePublisher = {
       type: emitMessage,
       id,
@@ -321,11 +311,55 @@ export function createIframe({
     events.register(event, callback)
   }
 
+  const createIframe = ({
+    id,
+    src,
+    attributes,
+    container,
+    options: _options,
+  }: {
+    id: string
+    src: string
+    attributes?: Attributes
+    container?: GetContainer
+    options?: Options
+  }) => {
+    const {fragment, iframe, origin} = _setUpIframe(
+      src,
+      attributes,
+      container,
+      _options ?? options,
+    )
+
+    iframes.push({
+      id,
+      origin,
+      iframe,
+    })
+
+    const onLoad = () => {
+      iframe.removeEventListener('load', onLoad)
+      hasAnyIframeLoaded = true
+      _emitWithNoQueue(onFrameLoadedEvent, {id, src, attributes})
+      rpc.handle({
+        key: iframeLoaded,
+        payload: '',
+      })
+    }
+
+    iframe.addEventListener('load', onLoad)
+
+    return {
+      render: render(fragment),
+      iframe,
+    }
+  }
+
   window.addEventListener('message', _onEvent, false)
   _ping()
 
   return {
-    render,
+    createIframe,
     call,
     emit,
     on,
