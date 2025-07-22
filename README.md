@@ -111,9 +111,9 @@ insideIframe.call('parentFn', 10).then((result) => {
 })
 ```
 
-### Properties (_Subject to change_)
+### Properties
 
-Values that are not functions in `available` object can be accessed from `window.framecommsProps`
+Values that are not functions in `available` object can be accessed from `get` function
 
 Host page:
 
@@ -145,7 +145,7 @@ const insideIframe = connectTo({
   available: {},
 })
 
-console.log(window.framecommsProps.userId) // 10
+console.log(insideIframe.get('userId')) // 10
 ```
 
 ### Events
