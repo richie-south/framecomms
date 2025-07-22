@@ -220,9 +220,7 @@ test('parent should call function to iframe', async ({page}) => {
   await waitForConsoleLog
 })
 
-test('iframe should access parent props on window.framecommsProps', async ({
-  page,
-}) => {
+test('iframe should access parent props with get function', async ({page}) => {
   const waitForConsoleLog = new Promise<void>((resolve) => {
     page.on('console', (msg) => {
       const text = msg.text()
@@ -263,7 +261,7 @@ test('iframe should access parent props on window.framecommsProps', async ({
     })
 
     insideIframe.on('@FRAMECOMMS/onConnected', () => {
-      console.log(window.framecommsProps.myPropery)
+      console.log(insideIframe.get('myPropery'))
     })
   })
 

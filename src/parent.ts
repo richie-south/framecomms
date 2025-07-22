@@ -21,10 +21,16 @@ import {
   updateGlobalsMessage,
   UpdateGlobalsMessage,
 } from './types/post-messages'
-import {Attributes, Available, GetContainer, Options} from './types/types'
+import {
+  Attributes,
+  Available,
+  GetContainer,
+  Options,
+  FrameGlobal,
+} from './types/types'
 const iframeLoaded = '3q6vOw'
 
-function _parseGlobals(available: Available) {
+function _parseGlobals(available: Available): FrameGlobal {
   return Object.fromEntries(
     Object.entries(available).filter(
       ([, value]) => typeof value !== 'function',
@@ -266,7 +272,7 @@ export function parent({
 
     globals = _parseGlobals(available)
 
-    const message: UpdateGlobalsMessage<typeof globals> = {
+    const message: UpdateGlobalsMessage<FrameGlobal> = {
       type: updateGlobalsMessage,
       id,
       payload: globals,

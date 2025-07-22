@@ -1,3 +1,5 @@
+import {FrameGlobal} from './types'
+
 export const callFnMessage = '@FRAMECOMMS/callfn'
 
 export interface CallFnMessage<TPayload = unknown> {
@@ -59,7 +61,7 @@ export interface PongMessage {
 
 export const updateGlobalsMessage = '@FRAMECOMMS/updateglobals'
 
-export interface UpdateGlobalsMessage<TPayload = unknown> {
+export interface UpdateGlobalsMessage<TPayload = FrameGlobal> {
   type: typeof updateGlobalsMessage
   id: string
   payload: TPayload

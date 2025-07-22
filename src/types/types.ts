@@ -18,3 +18,5 @@ export type GetContainer = ({
 export type Options = {
   origin?: string
 }
+
+export type FrameGlobal = Record<string, unknown>

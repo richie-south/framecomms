@@ -19,7 +19,7 @@ import {
   ResponseMessage,
   updateGlobalsMessage,
 } from './types/post-messages'
-import {Available} from './types/types'
+import {Available, FrameGlobal} from './types/types'
 
 export function connectTo({
   id,
@@ -34,6 +34,7 @@ export function connectTo({
   const callQueue = queueHandler()
   let isConnected: boolean = false
   let origin: string = '*'
+  let globals: FrameGlobal = {}
 
   const _post = (message: Events, o = origin) => {
     parent.postMessage(message, o)
@@ -107,7 +108,7 @@ export function connectTo({
     }
 
     if (event.data.type === updateGlobalsMessage) {
-      window.framecommsProps = event.data.payload
+      globals = event.data.payload
       return
     }
 
@@ -123,9 +124,9 @@ export function connectTo({
 
       rpc.register({
         key: reqId,
-        onHandle: async (payload) => {
+        onHandle: async (payload: FrameGlobal) => {
           isConnected = true
-          window.framecommsProps = payload
+          globals = payload
           events.handle(onConnectedEvent, payload)
           callQueue.flush(_post)
 
@@ -218,6 +219,14 @@ export function connectTo({
     }
   }
 
+  const get = <T, K extends keyof T>(key: K): T[K] | undefined => {
+    try {
+      return (globals as unknown)[key] as T[K]
+    } catch (error) {
+      return undefined
+    }
+  }
+
   window.addEventListener('message', _onEvent, false)
   _connect()
 
@@ -227,5 +236,6 @@ export function connectTo({
     removeListener,
     emit,
     addAvailable,
+    get,
   }
 }
