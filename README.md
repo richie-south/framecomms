@@ -22,7 +22,6 @@ const parentPage = parent({
 })
 
 const myIframe = parentPage.createIframe({
-  id: 'my-iframe',
   src: '',
 })
 
@@ -39,14 +38,12 @@ const parentPage = parent({
 })
 
 const myFrame = parentPage.createIframe({
-  id: 'my-frame',
   src: '',
 })
 
 myFrame.render('#query_to_element')
 
 const myFrame2 = myPage.createIframe({
-  id: 'my-frame-2',
   src: '',
 })
 
@@ -89,7 +86,6 @@ const parentPage = parent({
 })
 
 const myIframe = parentPage.createIframe({
-  id: 'my-frame',
   src: '',
 })
 
@@ -128,7 +124,6 @@ const parentPage = parent({
 })
 
 const myIframe = parentPage.createIframe({
-  id: 'my-frame',
   src: '',
 })
 
@@ -164,7 +159,6 @@ const parentPage = parent({
 })
 
 const myIframe = parentPage.createIframe({
-  id: 'my-frame',
   src: '',
 })
 
@@ -205,7 +199,6 @@ const parentPage = parent({
   id: 'parent',
 })
 const myIframe = parentPage.createIframe({
-  id: 'my-frame',
   src: '',
 })
 
