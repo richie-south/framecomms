@@ -36,7 +36,6 @@ async function setUp({page, pageCode}: {page: Page; pageCode: string}) {
     </html>
   `)
 
-  /* const iframeHandle = await page.$('iframe') */
   const iframesHandles = await page.$$('iframe')
   return await Promise.all(
     iframesHandles.map(async (iframeHandle) => {
@@ -59,24 +58,6 @@ async function setUp({page, pageCode}: {page: Page; pageCode: string}) {
       return frame
     }),
   )
-
-  /*  // Use srcdoc to define an initial HTML with a script placeholder
-  await iframeHandle!.evaluate((el) => {
-    el.setAttribute('srcdoc', '<html><body></body></html>')
-  })
-
-  // Wait for iframe to load
-  const frame = await (await iframeHandle!.contentFrame())!
-
-  // Inject libCode in the iframe
-  await frame.evaluate((code: string) => {
-    const script = document.createElement('script')
-    script.type = 'text/javascript'
-    script.textContent = code
-    document.body.appendChild(script)
-  }, libCode)
-
-  return frame */
 }
 
 test('should connect to parent from iframe', async ({page}) => {
@@ -96,7 +77,6 @@ test('should connect to parent from iframe', async ({page}) => {
     })
 
     const myFrame = parentPage.createIframe({
-      id: 'my-frame',
       src: '',
     })
 
@@ -145,7 +125,6 @@ test('iframe should call function to parent', async ({page}) => {
     })
 
     const myFrame = parentPage.createIframe({
-      id: 'my-frame',
       src: '',
     })
 
@@ -190,7 +169,6 @@ test('parent should call function to iframe', async ({page}) => {
     })
 
     const myFrame = parentPage.createIframe({
-      id: 'my-frame',
       src: '',
     })
 
@@ -240,7 +218,6 @@ test('iframe should access parent props with get function', async ({page}) => {
     })
 
     const myFrame = parentPage.createIframe({
-      id: 'my-frame',
       src: '',
     })
 
@@ -292,7 +269,6 @@ test('iframe should call function to parent and receive return value', async ({
     })
 
     const myFrame = parentPage.createIframe({
-      id: 'my-frame',
       src: '',
     })
 
@@ -340,7 +316,6 @@ test('parent should call function to iframe and receive return value', async ({
     })
 
     const myFrame = parentPage.createIframe({
-      id: 'my-frame',
       src: '',
     })
 
@@ -390,7 +365,6 @@ test('iframe should subscribe to on and parent can emit', async ({page}) => {
     })
 
     const myFrame = parentPage.createIframe({
-      id: 'my-frame',
       src: '',
     })
 
@@ -447,7 +421,6 @@ test('iframe should queue calls parent if its not connected', async ({
     })
 
     const myFrame = parentPage.createIframe({
-      id: 'my-frame',
       src: '',
     })
 
@@ -494,7 +467,6 @@ test('parent should be able to subscribe to events', async ({page}) => {
     })
 
     const myFrame = parentPage.createIframe({
-      id: 'my-frame',
       src: '',
     })
 
@@ -542,7 +514,6 @@ test('parent should call function on iframe, iframe registers after creation', a
     })
 
     const myFrame = parentPage.createIframe({
-      id: 'my-frame',
       src: '',
     })
 
@@ -593,7 +564,6 @@ test('iframe should get parent emit for new subscriber', async ({page}) => {
     })
 
     const myFrame = parentPage.createIframe({
-      id: 'my-frame',
       src: '',
     })
 
@@ -629,12 +599,10 @@ test('parent should be able to create multible iframes', async ({page}) => {
     })
 
     const myFrame = parentPage.createIframe({
-      id: 'my-frame',
       src: '',
     })
 
     const myFrame2 = parentPage.createIframe({
-      id: 'my-frame-2',
       src: '2',
     })
 
@@ -668,12 +636,10 @@ test('iframe should be able to call fn of another iframe', async ({page}) => {
     })
 
     const myFrame = parentPage.createIframe({
-      id: 'my-frame',
       src: '',
     })
 
     const myFrame2 = parentPage.createIframe({
-      id: 'my-frame-2',
       src: '2',
     })
 

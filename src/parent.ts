@@ -318,19 +318,17 @@ export function parent({
   }
 
   const createIframe = ({
-    id,
     src,
     attributes,
     container,
     options: _options,
   }: {
-    id: string
     src: string
     attributes?: Attributes
     container?: GetContainer
     options?: Options
   }) => {
-    const {fragment, iframe, origin} = _setUpIframe(
+    const {fragment, iframe, origin, frameId} = _setUpIframe(
       src,
       attributes,
       container,
@@ -338,7 +336,7 @@ export function parent({
     )
 
     iframes.push({
-      id,
+      id: frameId,
       origin,
       iframe,
     })
@@ -346,7 +344,7 @@ export function parent({
     const onLoad = () => {
       iframe.removeEventListener('load', onLoad)
       hasAnyIframeLoaded = true
-      _emitWithNoQueue(onFrameLoadedEvent, {id, src, attributes})
+      _emitWithNoQueue(onFrameLoadedEvent, {id: frameId, src, attributes})
       rpc.handle({
         key: iframeLoaded,
         payload: '',
