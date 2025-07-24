@@ -44,7 +44,7 @@ function _setUpIframe(
   getContainer?: GetContainer,
   options?: Options,
 ) {
-  const uid = `FRAME_${getId()}`
+  const frameId = `FRAME_${getId()}`
   const iframe = document.createElement('iframe')
 
   if (attributes && attributes.iframe) {
@@ -55,7 +55,7 @@ function _setUpIframe(
 
   iframe.setAttribute('frameborder', '0')
   iframe.setAttribute('src', src)
-  iframe.setAttribute('id', uid)
+  iframe.setAttribute('id', frameId)
 
   const origin = options.origin ?? new URL(iframe?.src || '').origin
 
@@ -63,7 +63,7 @@ function _setUpIframe(
   if (getContainer) {
     fragment.appendChild(
       getContainer({
-        uid,
+        frameId,
         iframe,
       }),
     )
@@ -75,7 +75,7 @@ function _setUpIframe(
     fragment,
     iframe,
     origin,
-    uid,
+    frameId,
   }
 }
 

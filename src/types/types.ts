@@ -8,10 +8,10 @@ export type Attributes = {
 }
 
 export type GetContainer = ({
-  uid,
+  frameId,
   iframe,
 }: {
-  uid: string
+  frameId: string
   iframe: HTMLIFrameElement
 }) => HTMLElement
 
