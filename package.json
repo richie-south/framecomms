@@ -15,10 +15,10 @@
       "import": "./lib/subscriber.js",
       "types": "./lib/subscriber.d.ts"
     },
-    "./publisher": {
-      "require": "./lib/publisher.js",
-      "import": "./lib/publisher.js",
-      "types": "./lib/publisher.d.ts"
+    "./parent": {
+      "require": "./lib/parent.js",
+      "import": "./lib/parent.js",
+      "types": "./lib/parent.d.ts"
     },
     "./constants": {
       "require": "./lib/constants.js",
@@ -31,8 +31,8 @@
       "subscriber": [
         "lib/subscriber.d.ts"
       ],
-      "publisher": [
-        "lib/publisher.d.ts"
+      "parent": [
+        "lib/parent.d.ts"
       ]
     }
   },
