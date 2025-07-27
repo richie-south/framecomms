@@ -43,7 +43,7 @@ const myFrame = parentPage.createIframe({
 
 myFrame.render('#query_to_element')
 
-const myFrame2 = myPage.createIframe({
+const myFrame2 = parentPage.createIframe({
   src: '',
 })
 
