@@ -356,6 +356,7 @@ export function parent({
     return {
       render: render(fragment),
       iframe,
+      frameId,
     }
   }
 
