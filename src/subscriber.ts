@@ -219,10 +219,10 @@ export function connectTo({
     }
   }
 
-  const get = <T, K extends keyof T>(key: K): T[K] | undefined => {
+  const get = <T>(key: keyof T): T[keyof T] | undefined => {
     try {
-      return (globals as unknown)[key] as T[K]
-    } catch (error) {
+      return (globals as unknown as T)[key]
+    } catch {
       return undefined
     }
   }
