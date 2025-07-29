@@ -1,5 +1,5 @@
 import {queueHandler} from './queue-handler'
-import {onConnectedEvent} from './constants'
+import {onConnectedEvent, onConnectFailedEvent} from './constants'
 import {createEvents} from './events'
 import {getId} from './generate-uniq-id'
 import {createRpcHandler} from './rpc'
@@ -119,34 +119,30 @@ export function connectTo({
   }
 
   const _connect = () => {
-    return new Promise((resolve, reject) => {
-      const reqId = getId()
+    const reqId = getId()
 
-      rpc.register({
-        key: reqId,
-        onHandle: async (payload: FrameGlobal) => {
-          isConnected = true
-          globals = payload
-          events.handle(onConnectedEvent, payload)
-          callQueue.flush(_post)
-
-          resolve(true)
-        },
-        onDeregister: () => {
-          reject(new Error('Could not connect'))
-        },
-      })
-
-      const message: ConnectMessage<typeof subscriberId> = {
-        type: connectMessage,
-        id,
-        reqId,
-        subscriberId,
-        payload: subscriberId,
-      }
-
-      _post(message)
+    rpc.register({
+      key: reqId,
+      onHandle: async (payload: FrameGlobal) => {
+        isConnected = true
+        globals = payload
+        events.handle(onConnectedEvent, payload)
+        callQueue.flush(_post)
+      },
+      onDeregister: () => {
+        events.handle(onConnectFailedEvent, id)
+      },
     })
+
+    const message: ConnectMessage<typeof subscriberId> = {
+      type: connectMessage,
+      id,
+      reqId,
+      subscriberId,
+      payload: subscriberId,
+    }
+
+    _post(message)
   }
 
   const call = <T = unknown>(method: string, payload?: unknown): Promise<T> => {
@@ -173,7 +169,7 @@ export function connectTo({
         return
       }
 
-      _post(message, '*')
+      _post(message)
     })
   }
 
