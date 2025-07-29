@@ -33,6 +33,9 @@
       ],
       "parent": [
         "lib/parent.d.ts"
+      ],
+      "constants": [
+        "lib/constants.d.ts"
       ]
     }
   },
