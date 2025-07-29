@@ -310,10 +310,7 @@ export function parent({
     _post(message)
   }
 
-  const on = <T = unknown>(
-    event: string,
-    callback: (params?: unknown) => Promise<T>,
-  ) => {
+  const on = <T = unknown>(event: string, callback: (params?: T) => void) => {
     events.register(event, callback)
   }
 

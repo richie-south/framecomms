@@ -177,10 +177,7 @@ export function connectTo({
     })
   }
 
-  const on = <T = unknown>(
-    event: string,
-    callback: (params?: unknown) => Promise<T>,
-  ) => {
+  const on = <T = unknown>(event: string, callback: (params?: T) => void) => {
     events.register(event, callback)
 
     if (event === connectedMessage && isConnected) {
