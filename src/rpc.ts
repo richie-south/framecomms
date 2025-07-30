@@ -18,7 +18,7 @@ interface RpcResponse {
 }
 
 export function createRpcHandler() {
-  const methods = new Map<string, RpcRegister>()
+  const methods = new Map<string, RpcRegister[]>()
   const timers = new Map<string, NodeJS.Timeout>()
 
   const _clearTimer = (methodName: string) => {
@@ -41,19 +41,23 @@ export function createRpcHandler() {
   }
 
   const register = (register: RpcRegister) => {
-    methods.set(register.key, register)
+    methods.set(register.key, [...(methods.get(register.key) ?? []), register])
     _setAutoDeregisterTimer(register.key)
   }
 
   const deregister = (methodName: string) => {
-    const register = methods.get(methodName)
+    const registers = methods.get(methodName)
 
-    if (register && register.onDeregister) {
-      try {
-        register.onDeregister()
-      } catch (err: any) {
-        // silent
-      }
+    if (Array.isArray(registers)) {
+      registers.forEach((register) => {
+        if (register && register.onDeregister) {
+          try {
+            register.onDeregister()
+          } catch (err: any) {
+            // silent
+          }
+        }
+      })
     }
 
     const existed = methods.delete(methodName)
@@ -61,22 +65,26 @@ export function createRpcHandler() {
     return existed
   }
 
-  const handle = async ({key, payload}: RpcRequest): Promise<RpcResponse> => {
-    const register = methods.get(key)
+  const handle = async ({key, payload}: RpcRequest): Promise<RpcResponse[]> => {
+    const registers = methods.get(key)
 
-    if (!register || !register.onHandle) {
-      return {error: `Method "${key}" not found.`}
+    if (!Array.isArray(registers)) {
+      return [{error: `Method "${key}" not found.`}]
     }
 
     _clearTimer(key)
     methods.delete(key)
 
-    try {
-      const result = await register.onHandle(payload)
-      return {result, key}
-    } catch (err) {
-      return {error: err?.message ?? 'Unknown error'}
-    }
+    return Promise.all(
+      registers.map(async (register) => {
+        try {
+          const result = await register.onHandle(payload)
+          return {result, key}
+        } catch (err) {
+          return {error: err?.message ?? 'Unknown error'}
+        }
+      }),
+    )
   }
 
   return {register, deregister, handle}
