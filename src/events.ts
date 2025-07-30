@@ -1,7 +1,7 @@
 type Method = (params?: unknown) => void
 
 export function createEvents() {
-  const methods = new Map<string, Array<Method>>()
+  const methods = new Map<string, Method[]>()
 
   const register = (key: string, fn: Method) => {
     methods.set(key, [...(methods.get(key) ?? []), fn])
@@ -16,7 +16,7 @@ export function createEvents() {
     const fns = methods.get(key)
 
     if (Array.isArray(fns)) {
-      fns.map((fn) => {
+      fns.forEach((fn) => {
         try {
           fn(payload)
         } catch (error) {
