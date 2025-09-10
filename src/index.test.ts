@@ -682,3 +682,72 @@ test('iframe should be able to call fn of another iframe', async ({page}) => {
 
   await waitForConsoleLog
 })
+
+test('iframe should be able to call fn of another iframe and get response', async ({
+  page,
+}) => {
+  const waitForConsoleLog = new Promise<void>((resolve) => {
+    page.on('console', (msg) => {
+      const text = msg.text()
+      console.log(text)
+      if (text === 'from iframe 1') {
+        resolve()
+      }
+    })
+  })
+  const pageCode = `
+    const parentPage = testFramecomms.parent({
+      id: '1',
+      options: {origin: '*'},
+      available: {},
+    })
+
+    const myFrame = parentPage.createIframe({
+      src: '',
+    })
+
+    const myFrame2 = parentPage.createIframe({
+      src: '2',
+    })
+
+    myFrame.render('#child')
+    myFrame2.render('#child2')
+  `
+
+  const frames = await setUp({page, pageCode})
+  const frame1 = frames[0]
+  const frame2 = frames[0]
+
+  await frame1.evaluate(() => {
+    if (!window.testFramecomms) {
+      return
+    }
+
+    window.testFramecomms.connectTo({
+      id: '1',
+      available: {
+        frame1Fn: () => {
+          return 'from iframe 1'
+        },
+      },
+    })
+  })
+
+  await frame2.evaluate(() => {
+    if (!window.testFramecomms) {
+      return
+    }
+
+    const insideIframe = window.testFramecomms.connectTo({
+      id: '1',
+      available: {},
+    })
+
+    // calling function in frame1 from frame2 by passing call to parent then to suscriber
+    insideIframe.call('frame1Fn').then((response) => {
+      console.log(response)
+    })
+  })
+
+  await waitForConsoleLog
+})
