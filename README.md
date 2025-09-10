@@ -1,7 +1,5 @@
 # Framecomms
 
-**Extreme work in progress**
-
 Basics of normalized/standardised iframe communication intended to be a lightweight alternative to `@krakenjs/zoid`
 
 [Framecomms on npm](https://www.npmjs.com/package/framecomms)
