@@ -169,13 +169,27 @@ export function parent({
               payload: response,
             }
             _post(message)
-          } catch (error) {}
+          } catch (error) {
+            console.error(error)
+          }
         }
 
         return
       } else {
         // fn might be available on any subscriber
         call(event.data.method, event.data.payload)
+          .then((response) => {
+            const message: ResponseMessage<typeof response> = {
+              type: responseMessage,
+              id,
+              reqId: (event.data as CallFnMessage).reqId,
+              payload: response,
+            }
+            _post(message)
+          })
+          .catch((error) => {
+            console.error(error)
+          })
       }
     }
 
