@@ -388,7 +388,7 @@ test('iframe should subscribe to on and parent can emit', async ({page}) => {
       available: {},
     })
 
-    insideIframe.on('subscriber', (param) => {
+    insideIframe.on('subscriber', (param: any) => {
       console.log(param)
     })
   })
@@ -744,8 +744,70 @@ test('iframe should be able to call fn of another iframe and get response', asyn
     })
 
     // calling function in frame1 from frame2 by passing call to parent then to suscriber
-    insideIframe.call('frame1Fn').then((response) => {
+    insideIframe.call('frame1Fn').then((response: any) => {
       console.log(response)
+    })
+  })
+
+  await waitForConsoleLog
+})
+
+test('iframe should subscribe once and parent can emit multible', async ({
+  page,
+}) => {
+  const waitForConsoleLog = new Promise<void>((resolve, reject) => {
+    let nr = 0
+    page.on('console', (msg) => {
+      const text = msg.text()
+
+      if (text === 'param from emit') {
+        nr += 1
+        setTimeout(() => {
+          if (nr === 1) {
+            resolve()
+          } else {
+            reject(new Error('emitted multible times'))
+          }
+        }, 400)
+      }
+    })
+  })
+  const pageCode = `
+    const parentPage = testFramecomms.parent({
+      id: '1',
+      options: {origin: '*'},
+    })
+
+    const myFrame = parentPage.createIframe({
+      src: '',
+    })
+
+    myFrame.render('#child')
+
+    setTimeout(async () => {
+      await parentPage.emit('subscriber', 'param from emit')
+    }, 100)
+
+    setTimeout(async () => {
+      await parentPage.emit('subscriber', 'param from emit')
+    }, 130)
+  `
+
+  const frames = await setUp({page, pageCode})
+  const frame = frames[0]
+
+  await frame.evaluate(() => {
+    if (!window.testFramecomms) {
+      return
+    }
+
+    const insideIframe = window.testFramecomms.connectTo({
+      id: '1',
+      available: {},
+    })
+
+    insideIframe.once('subscriber', (param: any) => {
+      console.log(param)
     })
   })
 
