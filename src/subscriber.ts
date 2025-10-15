@@ -113,7 +113,7 @@ export function connectTo({
     }
 
     if (event.data.type === emitMessage) {
-      events.handle(event.data.event, event.data.payload)
+      events.dispatchEvent(event.data.event, event.data.payload)
       return
     }
   }
@@ -126,11 +126,11 @@ export function connectTo({
       onHandle: async (payload: FrameGlobal) => {
         isConnected = true
         globals = payload
-        events.handle(onConnectedEvent, payload)
+        events.dispatchEvent(onConnectedEvent, payload)
         callQueue.flush(_post)
       },
       onDeregister: () => {
-        events.handle(onConnectFailedEvent, id)
+        events.dispatchEvent(onConnectFailedEvent, id)
       },
     })
 
@@ -173,16 +173,28 @@ export function connectTo({
     })
   }
 
-  const on = <T = unknown>(event: string, callback: (params?: T) => void) => {
-    events.register(event, callback)
+  const on = <T = unknown>(event: string, handler: (params?: T) => void) => {
+    events.addEventListener(event, handler)
 
     if (event === connectedMessage && isConnected) {
-      events.handle(event, {})
+      events.dispatchEvent(event, {})
     }
   }
 
-  const removeListener = (event: string) => {
-    events.deregister(event)
+  const once = <T = unknown>(event: string, handler: (params?: T) => void) => {
+    events.addEventListener(event, handler, {once: true})
+
+    if (event === connectedMessage && isConnected) {
+      events.dispatchEvent(event, {})
+    }
+  }
+
+  const removeListener = (event: string, handler: () => void) => {
+    events.removeEventListener(event, handler)
+  }
+
+  const removeAllListener = (event: string) => {
+    events.removeAllListeners(event)
   }
 
   const emit = (event: string, payload?: unknown) => {
@@ -226,7 +238,9 @@ export function connectTo({
   return {
     call,
     on,
+    once,
     removeListener,
+    removeAllListener,
     emit,
     addAvailable,
     get,

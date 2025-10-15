@@ -1,30 +1,61 @@
-type Method = (params?: unknown) => void
+type EventHandler<T = unknown> = (payload?: T) => void
+
+interface EventData {
+  handler: EventHandler
+  once: boolean
+}
 
 export function createEvents() {
-  const methods = new Map<string, Method[]>()
+  const events = new Map<string, EventData[]>()
 
-  const register = (key: string, fn: Method) => {
-    methods.set(key, [...(methods.get(key) ?? []), fn])
+  function addEventListener(
+    key: string,
+    handler: EventHandler,
+    options?: {once?: boolean},
+  ) {
+    const existing = events.get(key) ?? []
+    existing.push({handler, once: !!options?.once})
+    events.set(key, existing)
   }
 
-  const deregister = (methodName: string) => {
-    const existed = methods.delete(methodName)
-    return existed
-  }
+  function removeEventListener(key: string, handler: EventHandler) {
+    const existing = events.get(key)
+    if (!existing) return
 
-  const handle = (key: string, payload?: unknown) => {
-    const fns = methods.get(key)
-
-    if (Array.isArray(fns)) {
-      fns.forEach((fn) => {
-        try {
-          fn(payload)
-        } catch (error) {
-          // slient
-        }
-      })
+    const filtered = existing.filter((listener) => listener.handler !== handler)
+    if (filtered.length > 0) {
+      events.set(key, filtered)
+    } else {
+      events.delete(key)
     }
   }
 
-  return {register, deregister, handle}
+  function dispatchEvent<T = unknown>(key: string, payload?: T) {
+    const listeners = events.get(key)
+    if (!listeners) return
+
+    const toCall = [...listeners]
+
+    for (const {handler, once} of toCall) {
+      try {
+        handler(payload)
+      } catch {}
+
+      if (once) {
+        removeEventListener(key, handler)
+      }
+    }
+  }
+
+  function removeAllListeners(key?: string) {
+    if (key) events.delete(key)
+    else events.clear()
+  }
+
+  return {
+    addEventListener,
+    removeEventListener,
+    dispatchEvent,
+    removeAllListeners,
+  }
 }

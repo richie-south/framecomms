@@ -212,7 +212,7 @@ export function parent({
         payload: incoming.payload,
       }
       _post(message)
-      events.handle(event.data.event, event.data.payload)
+      events.dispatchEvent(event.data.event, event.data.payload)
       return
     }
   }
@@ -303,7 +303,7 @@ export function parent({
       payload: payload,
     }
 
-    events.handle(event, payload)
+    events.dispatchEvent(event, payload)
     _post(message)
   }
 
@@ -314,7 +314,7 @@ export function parent({
       event,
       payload: payload,
     }
-    events.handle(event, payload)
+    events.dispatchEvent(event, payload)
 
     if (subscribers.length === 0) {
       callQueue.add(message)
@@ -324,8 +324,8 @@ export function parent({
     _post(message)
   }
 
-  const on = <T = unknown>(event: string, callback: (params?: T) => void) => {
-    events.register(event, callback)
+  const on = <T = unknown>(event: string, handler: (params?: T) => void) => {
+    events.addEventListener(event, handler)
   }
 
   const createIframe = ({
